@@ -13,4 +13,7 @@ Two archives are separate projects that are built by QtCreator.
 3. Run qDisplayServer.
 4. Copy the "*.l" files (examples in Lisp) to the directory where the uLisp executable is located.
 5. Run uLisp.
-6. Look at DisplayServer, try pressing the arrows or 'h' for a hint.
+6. Look at DisplayServer, try pressing an arrows or 'h' for a hint.  Emacs arrow keys are supported.
+
+The program run lisp-editor which allows to view and change lists and sub-lists.
+For easy program-style view "l"-key can be pressed when the cursor is at list-type variable. 
