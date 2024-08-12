@@ -17,3 +17,8 @@ Two archives are separate projects that are built by QtCreator.
 
 The program run lisp writed list-editor which allows to view and change lists and sub-lists.
 For easy program-style view "l"-key can be pressed when the cursor is at list-type variable. 
+
+![изображение](https://github.com/user-attachments/assets/b2e23c9f-c9c1-4342-a7f5-51acd94c3fe5)
+
+![изображение](https://github.com/user-attachments/assets/56cafdee-7145-4955-9389-0feb119ca4d2)
+
