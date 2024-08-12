@@ -15,5 +15,5 @@ Two archives are separate projects that are built by QtCreator.
 5. Run uLisp.
 6. Look at DisplayServer, try pressing an arrows or 'h' for a hint.  Emacs arrow keys are supported.
 
-The program run lisp-editor which allows to view and change lists and sub-lists.
+The program run lisp writed list-editor which allows to view and change lists and sub-lists.
 For easy program-style view "l"-key can be pressed when the cursor is at list-type variable. 
