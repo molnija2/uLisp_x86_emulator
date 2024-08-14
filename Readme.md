@@ -1,6 +1,6 @@
 uLisp x86_64 emulator is console application created by QtCreator.
 
-IThis program is an emulator of the lisp interpreter for
+This program is an emulator of the lisp interpreter for
 microcontrollers uLisp developed by David Johnson-Davies (http://www.ulisp.com/)
 
 The interpreter connects to the qDisplayServer graphics server if
