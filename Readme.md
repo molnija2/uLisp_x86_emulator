@@ -21,7 +21,7 @@ For easy program-style view "l"-key can be pressed when the cursor is at list-ty
 
 ![изображение](https://github.com/user-attachments/assets/b2e23c9f-c9c1-4342-a7f5-51acd94c3fe5)
 
-'l' (small L)-key call advanced program-elitor for selected list.
+'l' (small L) key calls advanced program-elitor for selected list.
 
 ![изображение](https://github.com/user-attachments/assets/56cafdee-7145-4955-9389-0feb119ca4d2)
 
