@@ -1,0 +1,46 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>images/config.png</file>
+        <file>images/config3.PNG</file>
+        <file>images/copy.png</file>
+        <file>images/mainwin.PNG</file>
+        <file>images/mainwin.png</file>
+        <file>images/mainwin1.PNG</file>
+        <file>images/cut.png</file>
+        <file>images/Erase.png</file>
+        <file>images/mainwin2.PNG</file>
+        <file>images/new.png</file>
+        <file>images/Pause20.PNG</file>
+        <file>images/Pause21.PNG</file>
+        <file>images/progload.PNG</file>
+        <file>images/progload2.PNG</file>
+        <file>images/progload3.PNG</file>
+        <file>images/Erase2.png</file>
+        <file>images/fileopen.xpm</file>
+        <file>images/open.bmp</file>
+        <file>images/open.png</file>
+        <file>images/fileprint.xpm</file>
+        <file>images/filesave.xpm</file>
+        <file>images/paste.png</file>
+        <file>images/Pause2.PNG</file>
+        <file>images/program.png</file>
+        <file>images/progstart.PNG</file>
+        <file>images/progstart2.PNG</file>
+        <file>images/progstart3.PNG</file>
+        <file>images/progtest.PNG</file>
+        <file>images/progtest2.PNG</file>
+        <file>images/progtest3.PNG</file>
+        <file>images/step3.PNG</file>
+        <file>images/stop.PNG</file>
+        <file>images/stop2.PNG</file>
+        <file>images/pult_13.PNG</file>
+        <file>images/pult3.PNG</file>
+        <file>images/stop3.PNG</file>
+        <file>images/viewminus_image.xpm</file>
+        <file>images/save.bmp</file>
+        <file>images/save.png</file>
+        <file>images/viewplus_image.xpm</file>
+        <file>images/step2_inv.PNG</file>
+        <file>images/step2.PNG</file>
+    </qresource>
+</RCC>
