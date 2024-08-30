@@ -9,6 +9,7 @@
 
 #include <sys/stat.h>
 
+#include "arrays.h"
 #include "graph_tcp.h"
 
 #define BUFSIZE 1024
@@ -103,8 +104,12 @@ void tcp_setRegularTextColors (int color, int bkcolor)
 
 void tcp_setCursor(int x, int y)
 {
-    sprintf(buf,"gotoxy %d %d:", x,y) ;
-    n = write(sockfd, buf, strlen(buf));
+    //sprintf(buf,"gotoxy %d %d:", x,y) ;
+    strcpy(buf,"gotoxyb") ;
+    *(int*)(&buf[7]) = x ;
+    *(int*)(&buf[11]) = y ;
+
+    n = write(sockfd, buf, 15);
     read_answear() ;
 
     /*if(iCursorOn==1)
@@ -202,15 +207,28 @@ void tcp_drawsymbol (int c)
 
 void tcp_drawPixel (int x, int y, int color)
 {
-    sprintf(buf,"point %d %d:", x,y) ;
-    n = write(sockfd, buf, strlen(buf));
+    //sprintf(buf,"point %d %d:", x,y) ;
+    //n = write(sockfd, buf, strlen(buf));
+
+    strcpy(buf,"pointb") ;
+    *(int*)(&buf[6]) = x ;
+    *(int*)(&buf[10]) = y ;
+
+    n = write(sockfd, buf, 14);
     read_answear() ;
 }
 
 void tcp_drawLine (int x1, int y1, int x2, int y2, int color)
 {
-    sprintf(buf,"line %d %d %d %d %d:", x1,y1, x2,y2, color) ;
-    n = write(sockfd, buf, strlen(buf));
+//    sprintf(buf,"line %d %d %d %d %d:", x1,y1, x2,y2, color) ;
+//    n = write(sockfd, buf, strlen(buf));
+    strcpy(buf,"lineb") ;
+    *(int*)(&buf[5]) = x1 ;
+    *(int*)(&buf[9]) = y1 ;
+    *(int*)(&buf[13]) = x2 ;
+    *(int*)(&buf[17]) = y2 ;
+
+    n = write(sockfd, buf, 21);
     read_answear() ;
 }
 
@@ -218,8 +236,15 @@ void tcp_drawRect(int x1, int y1, int x2, int y2, int color)
 {
     tcp_setTextColor(color) ;
 
-    sprintf(buf,"rectangle %d %d %d :", x1,y1, x2,y2) ;
-    n = write(sockfd, buf, strlen(buf));
+//    sprintf(buf,"rectangle %d %d %d %d:", x1,y1, x2,y2) ;
+//    n = write(sockfd, buf, strlen(buf));
+    strcpy(buf,"rectangleb") ;
+    *(int*)(&buf[10]) = x1 ;
+    *(int*)(&buf[14]) = y1 ;
+    *(int*)(&buf[18]) = x2 ;
+    *(int*)(&buf[22]) = y2 ;
+
+    n = write(sockfd, buf, 26);
     read_answear() ;
 }
 
@@ -227,8 +252,16 @@ void tcp_fillRect(int x1, int y1, int x2, int y2, int color)
 {
     tcp_setTextColor(color) ;
 
-    sprintf(buf,"bar %d %d %d %d:", x1,y1, x2,y2) ;
-    n = write(sockfd, buf, strlen(buf));
+    //sprintf(buf,"bar %d %d %d %d:", x1,y1, x2,y2) ;
+    //n = write(sockfd, buf, strlen(buf));
+    strcpy(buf,"barb") ;
+    *(int*)(&buf[4]) = x1 ;
+    *(int*)(&buf[8]) = y1 ;
+    *(int*)(&buf[12]) = x2 ;
+    *(int*)(&buf[16]) = y2 ;
+
+    n = write(sockfd, buf, 20);
+
     read_answear() ;
 }
 
@@ -236,8 +269,15 @@ void tcp_drawCircle(int x, int y, int r, int color)
 {
     tcp_setTextColor(color) ;
 
-    sprintf(buf,"ellipce %d %d %d %d:", x-r,y-r, r,r) ;
-    n = write(sockfd, buf, strlen(buf));
+    //sprintf(buf,"ellipce %d %d %d %d:", x-r,y-r, r,r) ;
+    //n = write(sockfd, buf, strlen(buf));
+    strcpy(buf,"ellipceb") ;
+    *(int*)(&buf[8]) = x-r ;
+    *(int*)(&buf[12]) = y-r ;
+    *(int*)(&buf[16]) = r ;
+    *(int*)(&buf[20]) = r ;
+    n = write(sockfd, buf, 24);
+
     read_answear() ;
 }
 
@@ -246,8 +286,15 @@ void tcp_fillCircle(int x, int y, int r, int color)
     tcp_setTextColor(color) ;
     //iCurrentColor = color ;
 
-    sprintf(buf,"ellipcf %d %d %d %d:", x-r,y-r, r,r) ;
-    n = write(sockfd, buf, strlen(buf));
+    //sprintf(buf,"ellipcf %d %d %d %d:", x-r,y-r, r,r) ;
+    //n = write(sockfd, buf, strlen(buf));
+    strcpy(buf,"ellipcfb") ;
+    *(int*)(&buf[8]) = x-r ;
+    *(int*)(&buf[12]) = y-r ;
+    *(int*)(&buf[16]) = r ;
+    *(int*)(&buf[20]) = r ;
+    n = write(sockfd, buf, 24);
+
     read_answear() ;
 }
 
@@ -256,8 +303,16 @@ void tcp_drawRoundRect(int x1, int y1, int x2, int y2, int r, int color)
     tcp_setTextColor(color) ;
     //iCurrentColor = color ;
 
-    sprintf(buf,"rectround %d %d %d %d %d :", x1,y1, x2,y2, r) ;
-    n = write(sockfd, buf, strlen(buf));
+    //sprintf(buf,"rectround %d %d %d %d %d :", x1,y1, x2,y2, r) ;
+    //n = write(sockfd, buf, strlen(buf));
+    strcpy(buf,"rectroundb") ;
+    *(int*)(&buf[10]) = x1 ;
+    *(int*)(&buf[14]) = y1 ;
+    *(int*)(&buf[18]) = x2 ;
+    *(int*)(&buf[22]) = y2 ;
+    *(int*)(&buf[26]) = r ;
+    n = write(sockfd, buf, 30);
+
     read_answear() ;
 }
 
@@ -266,8 +321,15 @@ void tcp_fillRoundRect(int x1, int y1, int x2, int y2, int r, int color)
     tcp_setTextColor(color) ;
     //iCurrentColor = color ;
 
-    sprintf(buf,"barround %d %d %d %d %d :", x1,y1, x2-x1,y2-y1, r) ;
-    n = write(sockfd, buf, strlen(buf));
+    //sprintf(buf,"barround %d %d %d %d %d :", x1,y1, x2-x1,y2-y1, r) ;
+    //n = write(sockfd, buf, strlen(buf));
+    strcpy(buf,"barroundb") ;
+    *(int*)(&buf[9]) = x1 ;
+    *(int*)(&buf[13]) = y1 ;
+    *(int*)(&buf[17]) = x2 ;
+    *(int*)(&buf[21]) = y2 ;
+    *(int*)(&buf[25]) = r ;
+    n = write(sockfd, buf, 29);
     read_answear() ;
 }
 
@@ -292,8 +354,12 @@ void tcp_drawChar(int x, int y, int ch, int color, int bkcolor, int size)
 
     tcp_setCursor(x,y) ;
 
-    sprintf(buf, "putc %c:", ch) ;
-    n = write(sockfd, buf, strlen(buf));
+    //sprintf(buf, "putc %c:", ch) ;
+    //n = write(sockfd, buf, strlen(buf));
+    strcpy(buf, "putcb") ;
+    *(int*)(&buf[5]) = ch;
+    n = write(sockfd, buf, 9);
+
     read_answear() ;
 }
 
@@ -966,3 +1032,85 @@ int V100_EscProcessing(unsigned int c)
     return 0 ;
 }
 
+
+
+char *tcp_getimage(int x,int y,int w,int h )
+{
+    void filldimensionsteps(array_desc_t *descriptor) ;
+
+    strcpy(buf,"imggetb") ;
+    *(int*)(&buf[7]) = x ;
+    *(int*)(&buf[11]) = y ;
+    *(int*)(&buf[15]) = w ;
+    *(int*)(&buf[19]) = h ;
+
+    n = write(sockfd, buf, 23);
+
+    n = read(sockfd, buf, 4);
+    int32_t sz = *(int32_t*)(buf) ;
+
+    array_desc_t desctriptor ;
+
+    desctriptor.size = sz ;
+    desctriptor.dim[0] = h ;
+    desctriptor.dim[1] = w ;
+    desctriptor.dim[2] = sz / (w*h) ;
+    desctriptor.ndim = 3 ;
+    desctriptor.type = CHAR ;
+    desctriptor.element_size = 1 ;
+
+    filldimensionsteps(&desctriptor) ;
+
+    char *cPtr = (char *)malloc(desctriptor.size+sizeof(array_desc_t)) ;
+    *(array_desc_t*)cPtr = desctriptor ;
+
+    char *cPtr2 = cPtr + sizeof(array_desc_t) ;
+
+    int iCount = 1000 ;
+
+    while((sz>0)&&(iCount>0))
+    {
+        n = read(sockfd, cPtr2, sz);
+        sz -= n ;
+        cPtr2 += n ;
+        if(n==0) iCount-- ;
+    }
+
+
+    return cPtr ;
+}
+
+
+void delay (int ms);
+
+
+int tcp_putimage(int x, int y, char  *array )
+{
+    array_desc_t *desctriptor = (array_desc_t*)array ;
+    int32_t sz = desctriptor->size ;
+    int h = desctriptor->dim[0] ;
+    int w = desctriptor->dim[1] ;
+
+    array += sizeof(array_desc_t) ;
+
+    strcpy(buf,"imgputb") ;
+    *(int*)(&buf[7]) = x ;
+    *(int*)(&buf[11]) = y ;
+    *(int*)(&buf[15]) = w ;
+    *(int*)(&buf[19]) = h ;
+    *(int*)(&buf[23]) = sz ;
+
+    n = write(sockfd, buf, 27);
+
+    //delay(10);
+    //buf[0] = 0 ;
+    n = read(sockfd, buf, 5);
+
+    if(strncmp(buf,"WA",2)==0)
+    {
+        n = write(sockfd, array, sz);
+        array += n ;
+    }
+
+    return read_answear() ;
+}

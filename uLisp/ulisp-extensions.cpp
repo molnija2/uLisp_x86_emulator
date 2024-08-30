@@ -146,6 +146,22 @@ object *fn_touch_calibrate(object *args, object *env)
 
 
 
+/*
+(kbhit)  -  test whether any keyboard keys hits"
+*/
+
+object *fn_kbhit (object *args, object *env) {
+  (void) env;
+    int tcp_kbhit(void) ;
+
+  if(tcp_kbhit()) return tee ;
+
+  return  nil;
+}
+
+
+
+
 
 // Symbol names
 const char stringnow[]  = "now";
@@ -156,6 +172,7 @@ const char stringtouch_calibrate[] = "touch-calibrate";
 const char stringtouch_setcal[] = "touch-setcal";
 const char stringtouch_printcal[] = "touch-printcal";
 const char stringquit[] = "quit";
+const char string_kbhit[] = "kbhit" ;
 
 
 // Documentation strings
@@ -179,6 +196,10 @@ const char doctouch_printcal[] = "(touch-printcal)\n"
 const char docquit[] = "(quit)\n"
 "Exit from Lisp.";
 
+const char doc_kbhit[] = "(kbhit) - test whether any keyboard keys hits.\n"
+" Returns t if ney char symbols are available"
+"and otherwise returnsnil.";
+
 
 // Symbol lookup table
 const tbl_entry_t lookup_table2[]  = {
@@ -194,9 +215,16 @@ const tbl_entry_t lookup_table2[]  = {
 
     { string_aref2, fn_aref2, 0227, doc_aref2 },
     { string_probefile, fn_probefile, 0211, doc_probefile },
+    { string_renamefile, fn_renamefile, 0222, doc_renamefile },
+    { string_copyfile, fn_copyfile, 0222, doc_copyfile },
     { string_deletefile, fn_deletefile, 0211, doc_deletefile },
+    { string_ensuredirectoriesexist, fn_ensuredirectoriesexist, 0211, doc_ensuredirectoriesexist },
 
-
+    { string_kbhit, fn_kbhit, 0200, doc_kbhit },
+    { string_getimage, fn_getimage, 0244, doc_getimage },
+    { string_putimage, fn_putimage, 0233, doc_putimage },
+    { string_loadbitmap, fn_loadbitmap, 0211, doc_loadbitmap },
+    { string_savebitmap, fn_savebitmap, 0222, doc_savebitmap },
 
 
     { stringquit, fn_quit, 0203, docquit },

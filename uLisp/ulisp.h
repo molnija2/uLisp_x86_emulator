@@ -202,7 +202,7 @@ STRINGFN, PINMODE, DIGITALWRITE, ANALOGREAD, REGISTER, FORMAT //, AREF2
 
 #define issp(x)            (x == ' ' || x == '\n' || x == '\r' || x == '\t')
 #define isbr(x)            (x == ')' || x == '(' || x == '"' || x == '#')
-#define fntypef(x)          (getminmax((uint8_t)(x))>>6)
+#define fntypef(x)          (getminmax((uint16_t)(x))>>6)  //AR2  old:(getminmax((uint8_t)(x))>>6)
 #define longsymbolp(x)     (((x)->name & 0x03) == 0)
 #define longnamep(x)       (((x) & 0x03) == 0)
 #define twist(x)           ((uint32_t)((x)<<2) | (((x) & 0xC0000000)>>30))
@@ -322,24 +322,22 @@ void printarray2 (object *array, pfun_t pfun);
 builtin_t lookupbuiltin (char* c);
 void array2info (object *array) ;
 void InitArray2();
+object *array2dimensions(object *array);
 
 int fillpattern(char *mask, char *pattern);
 int findpattern(char *pattern, char *name);
 int selection(char *name, char *filemask );
 object *fn_probefile (object *args, object *env);
 object *fn_deletefile (object *args, object *env);
+object *fn_renamefile (object *args, object *env);
+object *fn_copyfile (object *args, object *env);
+object *fn_ensuredirectoriesexist(object *args, object *env);
 
+object *fn_putimage(object *args, object *env) ;
+object *fn_getimage(object *args, object *env) ;
+object *fn_loadbitmap(object *args, object *env) ;
+object *fn_savebitmap(object *args, object *env) ;
 
-
-typedef struct {
-  int dim[8];
-  int ndim;
-  int element_size;
-  size_t size;
-  uintptr_t  type ;
-  object bufferobj ;
-  object *obj_pointer ;
-} array_desc_t;
 
 
 #endif //___ULISP_H___

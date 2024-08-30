@@ -23,6 +23,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     arrays.h \
+    bmp.h \
     filesys.h \
     graph_tcp.h \
     ulisp.h

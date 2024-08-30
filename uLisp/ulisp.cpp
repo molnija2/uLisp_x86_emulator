@@ -19,6 +19,7 @@
 #include "ulisp.h"
 #include "graph_tcp.h"
 
+#include "arrays.h"
 
 
 // Lisp Library
@@ -720,7 +721,7 @@ int loadimage (object *arg)
     file = fopen(MakeFilename(arg, buffer),"rb");
     if (!file)
     {
-        pfstring("problem loading from SD card or invalid filename", pserial);
+        pfstring("problem loading from SD card or invalid filename\n", pserial);
         return 0 ;
     }
   }
@@ -3940,9 +3941,17 @@ object *fn_length (object *args, object *env) {
 object *fn_arraydimensions (object *args, object *env) {
   (void) env;
   object *array = first(args);
-  if (!arrayp(array)) error(PSTR("argument is not an array"), array);
-  object *dimensions = cddr(array);
-  return (first(dimensions)->integer < 0) ? cons(number(-(first(dimensions)->integer)), cdr(dimensions)) : dimensions;
+  if (arrayp(array))    //AR2
+  {
+      object *dimensions = cddr(array);
+    return (first(dimensions)->integer < 0) ? cons(number(-(first(dimensions)->integer)), cdr(dimensions)) : dimensions;
+  }
+  if (array2p(array))    //AR2
+  {
+      return array2dimensions(array) ;
+  }
+  error(PSTR("argument is not an array"), array);
+  return nil ;
 }
 
 /*
@@ -5615,6 +5624,12 @@ object *fn_delay (object *args, object *env) {
   unsigned long int end = checkinteger(arg1) + start;
   while (millis()<end) ;
   return arg1;
+}
+
+void delay (int ms) {
+  unsigned long int start = millis();
+  unsigned long int end = ms + start;
+  while (millis()<end) ;
 }
 
 /*

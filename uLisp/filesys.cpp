@@ -3,7 +3,10 @@
 
 #include <unistd.h>
 #include <stdlib.h>
-
+#include <bits/stdc++.h>
+#include <iostream>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "ulisp.h"
 
@@ -24,7 +27,7 @@ extern object *tee;
 object *fn_probefile (object *args, object *env) {
 #if defined(sdcardsupport)
   (void) env;
-  int type = 0x8 ;  // Files and directories
+  int type = 0x08 | 0x04;  // Files and directories
   char pattern_string[256] = "*" ;
   char dirname_string[256] = "/";
 
@@ -116,7 +119,7 @@ object *fn_probefile (object *args, object *env) {
 object *fn_deletefile (object *args, object *env) {
 #if defined(sdcardsupport)
   (void) env;
-  int type = 0x8 ;  // Files and directories
+  int type = 0x8 | 0x4;  // Files and directories
   char pattern_string[256] = "*" ;
   char dirname_string[256] = "/";
 
@@ -152,7 +155,7 @@ object *fn_deletefile (object *args, object *env) {
 #ifdef LINUX_X64
   DIR *Dir;
   Dir=opendir(dirname_string);
-  if(Dir==NULL){  pfstring("problem reading from SD card", pserial); return nil; }
+  if(Dir==NULL){  pfstring("problem reading directory from SD card", pserial); return nil; }
 
 #else
   SD.begin(SDCARD_SS_PIN);
@@ -169,9 +172,11 @@ object *fn_deletefile (object *args, object *env) {
       if((Dirent->d_type & type)
           &&(strcmp((char*)Dirent->d_name, pattern_string ))==0)
       {
-          sprintf(pattern_string,"rm %s//%s", dirname_string, (char*)Dirent->d_name);
           closedir(Dir);
-          system(pattern_string);
+          //sprintf(pattern_string,"rm %s/%s", dirname_string, (char*)Dirent->d_name);
+          //system(pattern_string);
+          sprintf(pattern_string,"%s/%s", dirname_string, (char*)Dirent->d_name);
+          remove(pattern_string);
           return tee;
       }
 #else
@@ -202,3 +207,212 @@ object *fn_deletefile (object *args, object *env) {
   return nil;
 #endif
 }
+
+
+//#include <cstdio>
+
+//using namespace std;
+#include <filesystem>  // std::filesystem::rename
+#include <string_view> // std::string_view
+using namespace std;
+
+
+
+object *fn_renamefile (object *args, object *env) {
+#if defined(sdcardsupport)
+  (void) env;
+  int type = 0x8 ;  // Files and directories
+  char filename_string[256] = "*" ;
+  char newname_string[256] = "/";
+
+  if (args != NULL)
+  {   //  Directory name
+      if(stringp(car(args)))
+      {
+        cstring(car(args), filename_string, 256) ;
+        args = cdr(args);
+        if (args != NULL)
+            if(stringp(car(args)))
+                cstring(car(args), newname_string, 256) ;
+            else  {  pfstring("\nrename-file: Second argument must be string.", pserial); return nil; }
+      }
+      else  {  pfstring("\nrename-file: First argument must be string.", pserial); return nil; }
+  }
+
+
+
+#ifdef LINUX_X64
+  if (rename(filename_string, newname_string) != 0)
+        pfstring("Error rename file", pserial);
+      else
+        return tee ;
+
+#else
+  SD.begin(SDCARD_SS_PIN);
+  File root = SD.open(dirname_string);
+  if (!root){  pfstring("problem reading from SD card", pserial); return nil; }
+#endif
+
+
+#ifdef LINUX_X64
+
+#else
+  root.close();
+#endif
+
+  return nil;
+#else
+  (void) args, (void) env;
+  error2("not supported");
+  return nil;
+#endif
+}
+
+
+object *fn_copyfile (object *args, object *env) {
+#if defined(sdcardsupport)
+  (void) env;
+  int type = 0x8 ;  // Files and directories
+  char filename_string[256] = "*" ;
+  char newname_string[256] = "/";
+
+  if (args != NULL)
+  {   //  Directory name
+      if(stringp(car(args)))
+      {
+        cstring(car(args), filename_string, 256) ;
+        args = cdr(args);
+        if (args != NULL)
+        {
+            if(stringp(car(args)))
+                cstring(car(args), newname_string, 256) ;
+            else  {  pfstring("\ncopy-file: Second argument must be string.", pserial); return nil; }
+        }
+      }
+      else  {  pfstring("\ncopy-file: First argument must be string.", pserial); return nil; }
+  }
+
+
+
+#ifdef LINUX_X64
+  FILE *fp_src, *fp_dest;
+
+  fp_src = fopen(filename_string,"rb");
+  if(!fp_src){  pfstring("\ncopy-file: Cannot open source file.", pserial); return nil; }
+  fp_dest = fopen(newname_string,"wb");
+  if(!fp_dest){ fclose(fp_src); pfstring("\ncopy-file: Cannot open source file.", pserial); return nil; }
+  char b[8] ;
+  while(0 == feof(fp_src)){
+      fread(b, 1, 1, fp_src) ;
+      fwrite(b, 1, 1, fp_dest) ;
+  }
+
+
+#else
+  SD.begin(SDCARD_SS_PIN);
+  File root = SD.open(dirname_string);
+  if (!root){  pfstring("problem reading from SD card", pserial); return nil; }
+#endif
+
+
+#ifdef LINUX_X64
+
+#else
+  root.close();
+#endif
+
+  return tee;
+#else
+  (void) args, (void) env;
+  error2("not supported");
+  return nil;
+#endif
+}
+
+
+
+
+
+
+
+object *fn_ensuredirectoriesexist(object *args, object *env) {
+#if defined(sdcardsupport)
+  (void) env;
+  int type = 0x8 ;  // Files and directories
+  char pattern_string[256] = "*" ;
+  char dirname_string[256] = "/";
+
+  if (args != NULL)
+  {   //  Directory name
+      if(stringp(car(args)))
+      {
+        cstring(car(args), dirname_string, 256) ;
+      }
+      else  {  pfstring("\nError: argument must be string", pserial); return nil; }
+  }
+
+
+#ifdef LINUX_X64
+  DIR *Dir;
+  Dir=opendir(dirname_string);
+  if(Dir==NULL){
+    if(-1==mkdir(dirname_string,0777))
+    {  pfstring("problem to create directory", pserial); return nil;  }
+  }
+  return tee;
+
+#else
+  SD.begin(SDCARD_SS_PIN);
+  File root = SD.open(dirname_string);
+  if (!root){  pfstring("problem reading from SD card", pserial); return nil; }
+#endif
+
+  while (true) {
+
+#ifdef LINUX_X64
+      struct dirent *Dirent = readdir(Dir);
+      if(!Dirent) break;
+
+      if((Dirent->d_type & type)
+          &&(strcmp((char*)Dirent->d_name, pattern_string ))==0)
+      {
+          closedir(Dir);
+          //sprintf(pattern_string,"rm %s/%s", dirname_string, (char*)Dirent->d_name);
+          //system(pattern_string);
+          sprintf(pattern_string,"%s/%s", dirname_string, (char*)Dirent->d_name);
+          remove(pattern_string);
+          return tee;
+      }
+#else
+      File entry = root.openNextFile();
+      if(!entry) break;
+
+      if( (entry.isDirectory() && (type&0x4)) || (!entry.isDirectory() && (type&0x8)) )
+         if(strcmp((char*)entry->name(), pattern_string ) == 0)
+      {
+         sprintf(pattern_string,"%s//%s", dirname_string, (char*)Dirent->d_name);
+         root.remove((char*)pattern_string);
+         root.close();
+         return tee;
+      }
+#endif
+  };
+
+#ifdef LINUX_X64
+  closedir(Dir);
+#else
+  root.close();
+#endif
+
+  return nil;
+#else
+  (void) args, (void) env;
+  error2("not supported");
+  return nil;
+#endif
+}
+
+
+
+
+
