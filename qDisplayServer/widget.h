@@ -45,6 +45,9 @@
 #define DEF_QRLISP_MAXY         600
 
 
+#define TCP_BUFFER_SIZE 256
+#define TCP_LONGBUFFER_SIZE 4096
+
 
 
 QT_BEGIN_NAMESPACE
@@ -72,6 +75,8 @@ public:
     short _Char_Sizex=8, _Char_Sizey=15;
     char *_CurrentFont;
 
+    int iWaitImage, iW,iH, iX, iY ;
+
     char cBuffer[256] ;
 
     FONT_INFO FontsBase[100] , FontTmp ;
@@ -91,6 +96,7 @@ public:
 
     QLabel imageLabel ;
     QImage pixmapScreen, debug_display_image ;
+    QImage pixmapScreen_buffer ;
     QPainter *pmpainter;
 
     QTextCodec *codec;
@@ -107,7 +113,7 @@ public:
     //int points2_x[200], points2_y[200] ;
 
     char cOperand[10][32] ;
-    char buffer_tcp[1024*1024] ;
+    char buffer_tcp[TCP_LONGBUFFER_SIZE] ;
 
     int penwidth ;
     int volatile iUseTextWindow ;
@@ -204,7 +210,7 @@ private:
   void lcd_PutCharRus(unsigned int  c) ;
 
     QImage GetImage(int x, int y, int w, int h) ;
-    void PutImage(int x, int y, QImage &image) ;
+    void PutImage(int x, int y, QImage image) ;
 private:
     Ui::Widget *ui;
 };

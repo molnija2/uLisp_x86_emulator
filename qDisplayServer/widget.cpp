@@ -53,7 +53,8 @@ Widget::Widget(QWidget *parent)
     //painter = new QPainter();
     //painter->begin(this);
     //painter->setViewport(0,menubar->heightForWidth( width() )+2.5, w, menubar->heightForWidth( width() )+h+2.5);
-    pixmapScreen = QImage( DEF_QRLISP_MAXX, DEF_QRLISP_MAXY, QImage::Format_ARGB32 ) ;
+    pixmapScreen = QImage( DEF_QRLISP_MAXX, DEF_QRLISP_MAXY, QImage::Format_RGB32 ) ;
+    pixmapScreen_buffer = QImage( DEF_QRLISP_MAXX, DEF_QRLISP_MAXY, QImage::Format_RGB32 ) ;
 
     //pmpainter = new QPainter(&pixmapScreen);
 
@@ -66,6 +67,7 @@ Widget::Widget(QWidget *parent)
     //ui->verticalLayout->addWidget(ui->checkBox_textwindow);
     //ui->verticalLayout->addWidget(ui->toolButton_Exit);
 
+    textBrowser_tcp = NULL ;
     iUseTextWindow = 0 ;
 
     iMaxX = DEF_QRLISP_MAXX ;
@@ -179,6 +181,8 @@ void Widget::on_toolButton_Exit_clicked()
 
 void Widget::acceptConnection()
 {
+    iWaitImage = 0 ;
+
   client = server.nextPendingConnection();
 
   connect(client, SIGNAL(readyRead()),
@@ -253,7 +257,9 @@ int Widget::GetArguments(char *str, int len)
 
 void Widget::startRead()
 {
-    char *buffer, buffer_stk[256], *buffer_tmp = NULL ;
+    char *buffer, buffer_stk[TCP_BUFFER_SIZE], *buffer_tmp = NULL ;
+
+    //int butter_len = TCP_BUFFER_SIZE ;
 
     buffer = buffer_stk ;
 
@@ -261,22 +267,36 @@ void Widget::startRead()
 
     if(len>256)
     {
-        buffer_tmp = new char[len] ;
+        //butter_len = TCP_LONGBUFFER_SIZE ;
+        buffer_tmp = (char*)pixmapScreen_buffer.bits() ;//new char[len] ;
         buffer = buffer_tmp ;
     }
 
+
     buffer[0] = 0 ;
 
-    client->read(buffer, len );
+    client->read(buffer, len);
 
-    buffer[len] = 0 ;
+    if(len<TCP_BUFFER_SIZE) buffer[len] = 0 ;
     //client->write(buffer, len );  // Echo to client
 
     //textBrowser_tcp->append(buffer) ;
     //printf("%s  len=%d\n", buffer, len) ; fflush(stdout); // Echo to server console
 
+    if(iWaitImage>0)
+    {
+        int sz = iWaitImage ;
 
-    switch(buffer[0])
+        QImage image = QImage((uchar*)buffer, iW,iH, QImage::Format_RGB32 ) ;
+        //image.fill(Qt::magenta) ;
+        PutImage(iX,iY, image) ;
+
+        strcpy(buffer,"OK\n") ;
+        client->write(buffer, strlen(buffer) );
+        iWaitImage = 0 ;
+    }
+    else
+     switch(buffer[0])
     {
     case '*':
         BinaryArgCall(buffer) ;
@@ -500,54 +520,70 @@ void Widget::startRead()
     case 'i':
         if(strncmp(buffer,"imgget", 6)==0)
         {
+            int x, y, h, w ;
             if(buffer[6]=='b')
             {
-                int x = *(int*)(&buffer[7]);
-                int y = *(int*)(&buffer[7+sizeof(int)]);
-                int w = *(int*)(&buffer[7+sizeof(int)*2]);
-                int h = *(int*)(&buffer[7+sizeof(int)*3]);
-                QImage image = GetImage(x,y, w,h) ;
-                client->write((char*)(&image), image.sizeInBytes() );
-                break ;
-            }
-            if(GetArguments(buffer, len) >4)
-            {
-              int x = atoi(cOperand[1]) ;
-              int y = atoi(cOperand[2]) ;
-              int w = atoi(cOperand[3]) ;
-              int h = atoi(cOperand[4]) ;
-
-              QImage image = GetImage(x,y, w,h) ;
-              client->write((char*)(&image), image.sizeInBytes() );
+                x = *(int*)(&buffer[7]);
+                y = *(int*)(&buffer[7+sizeof(int)]);
+                w = *(int*)(&buffer[7+sizeof(int)*2]);
+                h = *(int*)(&buffer[7+sizeof(int)*3]);
             }
             else
-                client->write("ARG\n", 4);
+            if(GetArguments(buffer, len) >4)
+            {
+                x = atoi(cOperand[1]) ;
+                y = atoi(cOperand[2]) ;
+                w = atoi(cOperand[3]) ;
+                h = atoi(cOperand[4]) ;
+            }
+            else { client->write("ARG\n", 4);  break ;  }
+
+            QImage image = GetImage(x,y, w,h) ;
+            //image.fill(Qt::magenta) ;
+            int32_t sz = image.sizeInBytes() ;
+            client->write((char*)(&sz),sizeof(sz));
+
+            int res = client->write((char*)(image.bits()),  sz);
+            if(res<sz)
+            { printf("TCP write error\n") ; fflush(stdout) ; }
+            break ;
         }
         if(strncmp(buffer,"imgput", 6)==0)
         {
+            int x, y, h, w ;
+            int32_t sz ;
+
             if(buffer[6]=='b')
             {
-                int x = *(int*)(&buffer[7]);
-                int y = *(int*)(&buffer[7+sizeof(int)]);
-                QImage *image = (QImage*)(&buffer[7+sizeof(int)*2]) ;
-
-                PutImage(x,y, *image) ;
-                strcpy(buffer,"OK\n") ;
-                client->write(buffer, strlen(buffer) );
-                break ;
-            }
-
-            if(GetArguments(buffer, /*len*/ 18) >2)
-            {
-                int x = atoi(cOperand[1]) ;
-                int y = atoi(cOperand[2]) ;
-                QImage *image = (QImage*)(&buffer[20]) ;
-
-              strcpy(buffer,"OK\n") ;
-              client->write(buffer, strlen(buffer) );
+                x = *(int*)(&buffer[7]);
+                y = *(int*)(&buffer[7+sizeof(int)]);
+                w = *(int*)(&buffer[7+sizeof(int)*2]);
+                h = *(int*)(&buffer[7+sizeof(int)*3]);
+                sz = *(int*)(&buffer[7+sizeof(int)*4]);
             }
             else
-                client->write("ARG\n", 4);            sprintf(buffer,"%u\n",this->scrollArea_Screen->GETCH()&0xff) ;
+            if(GetArguments(buffer, len) >2)
+            {
+                x = atoi(cOperand[1]) ;
+                y = atoi(cOperand[2]) ;
+                w = atoi(cOperand[1]) ;
+                h = atoi(cOperand[2]) ;
+                sz = atoi(cOperand[3]) ;
+            }
+            else {
+                client->write("ARG\n", 4);  break ;
+            }
+
+            strcpy(buffer,"WAIT\n") ;
+            client->write(buffer, strlen(buffer) );
+
+            iWaitImage = sz ;
+            iW = w ;
+            iH = h ;
+            iX = x ;
+            iY = y ;
+
+            break ;
         }
 
     case 'g':
@@ -1111,7 +1147,7 @@ void Widget::startRead()
         client->write(buffer, strlen(buffer) );
     }
 
-    if(buffer_tmp) delete buffer_tmp ;
+    //if(buffer_tmp) delete buffer_tmp ;
 }
 
 
@@ -1935,19 +1971,19 @@ int Widget::lcd_getTextWidth(char *str)
 
 
 
-QImage Widget::GetImage(int x, int y, int w, int h)
+QImage Widget::GetImage (int x, int y, int w, int h)
 {
-    return pixmapScreen.copy(x+CurrentViewport.left(),y+CurrentViewport.top(),w,h) ;
+    return pixmapScreen.copy(QRect(x+CurrentViewport.left(),y+CurrentViewport.top(),w,h)) ;
 }
 
 
-void Widget::PutImage(int x, int y, QImage &image)
+void Widget::PutImage (int x, int y, QImage image)
 {
     painter.begin(&(pixmapScreen)) ;
     painter.setClipRect(CurrentViewport.left(),CurrentViewport.top(),
                         CurrentViewport.width(),CurrentViewport.height());
 
-    painter.drawImage(x,y, image) ;
+    painter.drawImage(x, y, image) ;
     painter.end() ;
 }
 
