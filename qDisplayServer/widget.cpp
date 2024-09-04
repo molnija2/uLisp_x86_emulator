@@ -182,6 +182,7 @@ void Widget::on_toolButton_Exit_clicked()
 void Widget::acceptConnection()
 {
     iWaitImage = 0 ;
+    iWaitContinue = 0 ;
 
   client = server.nextPendingConnection();
 
@@ -265,17 +266,17 @@ void Widget::startRead()
 
     int len = client->bytesAvailable() ;
 
-    if(len>256)
+    if((len>256)||((iWaitContinue)||(iWaitImage>0)))
     {
         //butter_len = TCP_LONGBUFFER_SIZE ;
-        buffer_tmp = (char*)pixmapScreen_buffer.bits() ;//new char[len] ;
+        buffer_tmp = (char*)pixmapScreen_buffer.bits()+iWaitContinue ;//new char[len] ;
         buffer = buffer_tmp ;
     }
 
 
     buffer[0] = 0 ;
 
-    client->read(buffer, len);
+    qint64 sz = client->read(buffer, len);
 
     if(len<TCP_BUFFER_SIZE) buffer[len] = 0 ;
     //client->write(buffer, len );  // Echo to client
@@ -285,15 +286,24 @@ void Widget::startRead()
 
     if(iWaitImage>0)
     {
-        int sz = iWaitImage ;
+        iWaitImage -=sz ;
 
-        QImage image = QImage((uchar*)buffer, iW,iH, QImage::Format_RGB32 ) ;
-        //image.fill(Qt::magenta) ;
-        PutImage(iX,iY, image) ;
 
-        strcpy(buffer,"OK\n") ;
-        client->write(buffer, strlen(buffer) );
-        iWaitImage = 0 ;
+        if(iWaitImage <= 0)
+        {
+            QImage image = QImage((uchar*)pixmapScreen_buffer.bits(), iW,iH, QImage::Format_RGB32 ) ;
+            //image.fill(Qt::magenta) ;
+            PutImage(iX,iY, image) ;
+
+            strcpy(buffer,"OK\n") ;
+            client->write(buffer, strlen(buffer) );
+            iWaitImage = 0 ;
+            iWaitContinue = 0 ;
+        }
+        else
+            iWaitContinue += sz ;
+
+
     }
     else
      switch(buffer[0])
@@ -578,6 +588,7 @@ void Widget::startRead()
             client->write(buffer, strlen(buffer) );
 
             iWaitImage = sz ;
+            iWaitContinue = 0 ;
             iW = w ;
             iH = h ;
             iX = x ;
@@ -1043,12 +1054,12 @@ void Widget::startRead()
         break ;
 
     case 'p':
-        if(strncmp(buffer,"point ",6)==0)
+        if(strncmp(buffer,"point ",5)==0)
         {
 
-            if(buffer[6]=='b')
+            if(buffer[5]=='b')
             {
-                DrawPoint(*(int*)(&buffer[7]),*(int*)(&buffer[7+sizeof(int)]) ) ;
+                DrawPoint(*(int*)(&buffer[6]),*(int*)(&buffer[6+sizeof(int)]) ) ;
                 client->write("OK\n", 3);
                 break ;
             }

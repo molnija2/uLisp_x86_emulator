@@ -75,7 +75,8 @@ public:
     short _Char_Sizex=8, _Char_Sizey=15;
     char *_CurrentFont;
 
-    int iWaitImage, iW,iH, iX, iY ;
+    qint64 iWaitImage, iWaitContinue ;
+    int iW,iH, iX, iY ;
 
     char cBuffer[256] ;
 
