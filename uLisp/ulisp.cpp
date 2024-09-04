@@ -3929,9 +3929,11 @@ object *fn_length (object *args, object *env) {
   (void) env;
   object *arg = first(args);
   if (listp(arg)) return number(listlength(arg));
+  if (array2p(arg)) return number(listlength(arg));
   if (stringp(arg)) return number(stringlength(arg));
+  if (array2p(arg) && array2_lenght(arg)) return number(array2_lenght(arg));
   if (!(arrayp(arg) && cdr(cddr(arg)) == NULL)) error(PSTR("argument is not a list, 1d array, or string"), arg);
-  return number(abs(first(cddr(arg))->integer));
+   return number(abs(first(cddr(arg))->integer));
 }
 
 /*

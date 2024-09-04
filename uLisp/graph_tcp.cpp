@@ -207,6 +207,7 @@ void tcp_drawsymbol (int c)
 
 void tcp_drawPixel (int x, int y, int color)
 {
+    tcp_setTextColor(color) ;
     //sprintf(buf,"point %d %d:", x,y) ;
     //n = write(sockfd, buf, strlen(buf));
 

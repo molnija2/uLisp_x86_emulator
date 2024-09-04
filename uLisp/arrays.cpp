@@ -24,21 +24,27 @@ extern object *tee;
 enum { CHARACTER_ARRAY, SINGLEFLOAT_ARRAY, DOUBLEFLOAT_ARRAY, INTEGER_ARRAY };
 
 
-symbol_t array2_type_name[8] = {0,0,0,0,0,0,0,0}, Aref2_name ;
+//symbol_t array2_type_name[8] = {0,0,0,0,0,0,0,0};
+symbol_t Aref2_name ;
 
-/*symbol_t array2_char_name ;
-symbol_t array2_singlefl_name ;
-symbol_t array2_doublefl_name ;
-symbol_t array2_integer_name ;*/
+symbol_t array2_CHAR_name ;
+symbol_t array2_SINGLEFLOAT_name ;
+symbol_t array2_DOUBLEFLOAT_name ;
+symbol_t array2_INTEGER_name ;
 
 void InitArray2()
 {
-    if(array2_type_name[0] == 0)
+    if(array2_CHAR_name == 0)
     {
-        array2_type_name[SINGLEFLOAT_ARRAY] = sym(lookupbuiltin ((char*)"single-float")) ;
-        array2_type_name[DOUBLEFLOAT_ARRAY] = sym(lookupbuiltin ((char*)"double-float")) ;
-        array2_type_name[INTEGER_ARRAY] = sym(lookupbuiltin ((char*)"integer")) ;
-        array2_type_name[CHARACTER_ARRAY] = sym(lookupbuiltin ((char*)"character")) ;
+        //array2_type_name[SINGLEFLOAT_ARRAY] = sym(lookupbuiltin ((char*)"single-float")) ;
+        //array2_type_name[DOUBLEFLOAT_ARRAY] = sym(lookupbuiltin ((char*)"double-float")) ;
+        //array2_type_name[INTEGER_ARRAY] = sym(lookupbuiltin ((char*)"integer")) ;
+        //array2_type_name[CHARACTER_ARRAY] = sym(lookupbuiltin ((char*)"character")) ;
+        array2_SINGLEFLOAT_name = sym(lookupbuiltin ((char*)"single-float")) ;
+        array2_DOUBLEFLOAT_name = sym(lookupbuiltin ((char*)"double-float")) ;
+        array2_INTEGER_name = sym(lookupbuiltin ((char*)"integer")) ;
+        array2_CHAR_name = sym(lookupbuiltin ((char*)"character")) ;
+
         Aref2_name = sym(lookupbuiltin ((char*)"aref*")) ;
     }
 }
@@ -157,10 +163,10 @@ object *fn_makearray2 (object *args, object *env) {
           InitArray2() ;
 
           if( isbuiltin(typeobj, BIT)) { bitp = true; type = CHAR ; }
-          else if( typeobj->name == array2_type_name[CHARACTER_ARRAY]) type = CHAR ;
-          else if( typeobj->name == array2_type_name[INTEGER_ARRAY]) type = NUMBER ;
-          else if( typeobj->name == array2_type_name[SINGLEFLOAT_ARRAY]) type = FLOAT ;
-          else if( typeobj->name == array2_type_name[DOUBLEFLOAT_ARRAY]) type = FLOAT ;
+          else if( typeobj->name == array2_CHAR_name) type = CHAR ;
+          else if( typeobj->name == array2_INTEGER_name) type = NUMBER ;
+          else if( typeobj->name == array2_SINGLEFLOAT_name) type = FLOAT ;
+          else if( typeobj->name == array2_DOUBLEFLOAT_name) type = FLOAT ;
       }
     else error(PSTR("argument not recognised"), var);
     args = cddr(args);
@@ -282,7 +288,15 @@ object *fn_array2p (object *args, object *env) {
 }
 
 
+int32_t array2_lenght(object *arg)
+{
+    array_desc_t *desc = (array_desc_t*)(arg->pointer) ;
 
+    if(!arg->pointer) return -1 ;
+    if(desc->ndim > 1) return -2 ;
+
+    return desc->size ;
+}
 
 /*
   delarray
@@ -601,10 +615,14 @@ object *fn_loadbitmap(object *args, object *env)
       //fseek(fp, gettrueDWORD(filedesc.bfOffBits) , SEEK_SET) ;
       int w = desctriptor.dim[1] ;
       int h = desctriptor.dim[0] ;
+      int ws = ((w*2)/4)*4 ;
+      if(ws<(w*2)) ws+=4 ;
+      int ost = ws - (w*2) ;
 
       for(i=0;i<h;i++)
-          for(j=0;j<w;j+=2)
       {
+        for(j=0;j<w;j++)
+        {
           int k = (h-i-1) * w + j ;
           fread(&uiPixel, 1, 2, fp) ;
 
@@ -613,7 +631,8 @@ object *fn_loadbitmap(object *args, object *env)
           value |= ((uiPixel>>5) & 0x1f)<<3 ;
           value |= ((uiPixel>>10) & 0x1f)<<3 ;
           ((uint32_t*)cPtrData)[k] = value ;
-          cPtrData += 4 ;
+        }
+        fread(&uiPixel, 1,ost,fp) ;
       }
   }
   else if(bitmapdesc.biBitCount == 24)
@@ -624,19 +643,25 @@ object *fn_loadbitmap(object *args, object *env)
       //fseek(fp, pixelsbgn , SEEK_SET) ;
       int w = desctriptor.dim[1] ;
       int h = desctriptor.dim[0] ;
+      //int ost = (w*3) % 4 ;
+      int ws = ((w*3)/4)*4 ;
+      if(ws<(w*3)) ws+=4 ;
+      int ost = ws - (w*3) ;
 
       for(i=0;i<h;i++)
-          for(j=0;j<w;j+=2)
       {
+        for(j=0;j<w;j++)
+        {
           int k = (h-i-1) * w + j ;
           fread(uiPixel, 1, 3, fp) ;
 
           uint32_t value = 0 ;
           value = uiPixel[0] ;
-          value |= uiPixel[1]<<8 ;
-          value |= uiPixel[2]<<16 ;
-          ((uint32_t*)cPtrData)[k] = value ;
-          cPtrData += 4 ;
+          value |= ((uint32_t)uiPixel[1])<<8 ;
+          value |= ((uint32_t)uiPixel[2])<<16 ;
+          ((uint32_t*)cPtrData)[k] = *((uint32_t*)uiPixel) ;//value ;
+         }
+         fread(uiPixel, 1,ost,fp) ;
       }
   }
   else if(bitmapdesc.biBitCount == 32)
@@ -650,13 +675,12 @@ object *fn_loadbitmap(object *args, object *env)
       int h = desctriptor.dim[0] ;
 
       for(i=0;i<h;i++)
-          for(j=0;j<w;j+=2)
+          for(j=0;j<w;j++)
       {
           int k = (h-i-1) * w + j ;
           fread(uiPixel, 1, 4, fp) ;
 
           ((uint32_t*)cPtrData)[k] = *(uint32_t*)(uiPixel) ;
-          cPtrData += 4 ;
       }
   }
   else if(bitmapdesc.biBitCount == 4)
@@ -672,19 +696,26 @@ object *fn_loadbitmap(object *args, object *env)
 
       int w = desctriptor.dim[1] ;
       int h = desctriptor.dim[0] ;
+      int w2 = w/2 ;
+      int w2s = (w2/4)*4 ;
+      if(w2s<w2) w2s+=4 ;
+      int ost = w2s - w2 ;
 
       for(i=0;i<h;i++)
-          for(j=0;j<w;j+=2)
       {
+        for(j=0;j<w;j+=2)
+        {
           int k = (h-i-1) * w + j ;
 
           fread(uiPixel, 1, 1, fp) ;
           ((uint32_t*)cPtrData)[k] = Colors[(uiPixel[0]>>4) & 0xf] ;
-          //cPtrData += 4;
+
           ((uint32_t*)cPtrData)[k+1] = Colors[uiPixel[0] & 0xf] ;
-          //cPtrData += 4;
+
           iPixelCount += 2 ;
-      }
+        }
+      fread(uiPixel, 1,ost,fp) ;
+    }
   }
   else if(bitmapdesc.biBitCount == 8)
   {
@@ -699,15 +730,21 @@ object *fn_loadbitmap(object *args, object *env)
 
       int w = desctriptor.dim[1] ;
       int h = desctriptor.dim[0] ;
+      int ws = (w/4)*4 ;
+      if(ws<w) ws+=4 ;
+      int ost = ws - w ;
 
       for(i=0;i<h;i++)
-          for(j=0;j<w;j++)
       {
+        for(j=0;j<w;j++)
+        {
           int k = (h-i-1) * w + j ;
 
           fread(uiPixel, 1, 1, fp) ;
-          ((uint32_t*)cPtrData)[k] = Colors[uiPixel[0] & 0xf] ;
+          ((uint32_t*)cPtrData)[k] = Colors[uiPixel[0]] ;
           iPixelCount += 1 ;
+        }
+        fread(uiPixel, 1,ost,fp) ;
       }
   }
 
@@ -733,35 +770,28 @@ object *fn_savebitmap(object *args, object *env)
     //BITMAPFILEHEADER filedesc ;
     BITMAPINFOHEADER bitmapdesc = { 0 } ;
 
-    int x=0, y=0, h=0, w=0 ;
     object *obj = args ;
 
     object *array = car(obj) ;
 
     if(!array2p(array))
     {
-          pfstring("\nError: file name must be string\n", pserial);
+          pfstring("\nError: first argument must be array2.\n", pserial);
           return nil ;
     }
 
     obj = cdr(obj);
 
-    if(!stringp(car(args)) )
+    if(!stringp(car(obj)) )
     {
-          pfstring("\nError: file name must be string\n", pserial);
+          pfstring("\nError: file name must be string.\n", pserial);
           return nil ;
     }
 
-
-    if(!stringp(car(args)) )
-    {
-          pfstring("\nError: file name must be string\n", pserial);
-          return nil ;
-    }
 
     char fname[256] ;
 
-    cstring(car(args), fname, 256) ;
+    cstring(car(obj), fname, 256) ;
 
     fp = fopen(fname, "wb") ;
 
@@ -770,14 +800,19 @@ object *fn_savebitmap(object *args, object *env)
           return nil ; }
 
     array_desc_t desctriptor = *(array_desc_t*)array->pointer ;
+
     char *cPtrData = (char*)(array->pointer) + sizeof(array_desc_t) ;
+    char *cPtr = cPtrData ;
 
     desctriptor.ndim = 3 ;
     bitmapdesc.biHeight = desctriptor.dim[0] ;
     bitmapdesc.biWidth = desctriptor.dim[1] ;
     bitmapdesc.biCompression = 0 ;
     bitmapdesc.biPlanes = 1 ;
-    bitmapdesc.biSize = 0 ;
+    bitmapdesc.biSize = 40 ;
+    bitmapdesc.biSizeImage = 0 ;
+    bitmapdesc.biXPelsPerMeter = 0 ;
+    bitmapdesc.biYPelsPerMeter = 0 ;
 
     char fdescbuffer[14] ;
 
@@ -791,46 +826,58 @@ object *fn_savebitmap(object *args, object *env)
     uint32_t Colors[257] ;
 
 
-    //*pixelsbgn =
     int i, j ;
     uint32_t uiPixel ;
 
     for(i=0;i<desctriptor.dim[0];i++)
         for(j=0;j<desctriptor.dim[1];j++)
     {
-        uiPixel = *(uint32_t*)cPtrData ;
+        uiPixel = *(uint32_t*)cPtr ;
 
-        for(int k=0;k<NumColors;k++)
+        int ifound = 0 ;
+        int k=0;
+        while((k<NumColors)&&(ifound == 0))
         {
-            if(Colors[k] != uiPixel)
-            {
-                Colors[NumColors] = uiPixel ;
-                NumColors++ ;
-            }
-            if(NumColors > 256) break ;
+            if(Colors[k] == uiPixel) ifound = 1 ;
+            k++;
         }
-        cPtrData += 4 ;
+        if(ifound == 0)
+        {
+            Colors[NumColors] = uiPixel ;
+            NumColors++ ;
+        }
+
+        if(NumColors > 256)
+        {
+            i = desctriptor.dim[0];
+            j = desctriptor.dim[1];
+        } ;
+        cPtr += 4 ;
     }
+    //NumColors = 257;
 
     if(NumColors > 256) {
         bitmapdesc.biBitCount = 24 ; bitmapdesc.biClrUsed = 0 ;
         bitmapdesc.biClrImportant = 0 ; }
     else if(NumColors <= 16) {
+        bitmapdesc.biClrImportant = NumColors ;
         bitmapdesc.biBitCount = 4 ;  bitmapdesc.biClrUsed = 16 ; }
     else {
+        bitmapdesc.biClrImportant = NumColors ;
         bitmapdesc.biBitCount = 8 ;  bitmapdesc.biClrUsed = 256 ; }
 
-    bitmapdesc.biClrImportant = NumColors ;
 
-    *pixelsbgn = bitmapdesc.biClrUsed*4 + 40 + 14 ;
+
+    *pixelsbgn = bitmapdesc.biClrUsed*sizeof(uint32_t) + 40 + 14 ;
+    *filesize = *pixelsbgn + (desctriptor.dim[0] * desctriptor.dim[1]*bitmapdesc.biBitCount)/8;
 
     fwrite(fdescbuffer, 1, 14, fp);
     fwrite(&bitmapdesc, 1, 40, fp);
     if(bitmapdesc.biBitCount <= 8)
-        fwrite(&Colors, 1, (uint32_t)bitmapdesc.biClrUsed, fp);
+        fwrite(&Colors, 1, sizeof(uint32_t)*bitmapdesc.biClrUsed, fp);
 
 
-    char *cPtr = cPtrData ;
+    cPtr = cPtrData ;
 
     if(bitmapdesc.biBitCount == 24)
     {
@@ -838,74 +885,337 @@ object *fn_savebitmap(object *args, object *env)
         char uiPixel[4] ;
         int w = desctriptor.dim[1] ;
         int h = desctriptor.dim[0] ;
+        //int ost = (w*3) % 4 ;
+        int ws = ((w*3)/4)*4 ;
+        if(ws<(w*3)) ws+=4 ;
+        int ost = ws - (w*3) ;
 
         for(i=0;i<h;i++)
-            for(j=0;j<w;j+=2)
         {
-            int k = (h-i-1) * w + j ;
+            for(j=0;j<w;j++)
+            {
+                int k = (h-i-1) * w + j ;
 
-            uint32_t value = ((uint32_t*)cPtr)[k] ;
+                uint32_t value = ((uint32_t*)cPtr)[k] ;
 
-            uiPixel[0] = value & 0xff ;
-            uiPixel[1] = (value >>8) & 0xff ;
-            uiPixel[2] = (value >>16) & 0xff ;
-            cPtr += 4 ;
+                uiPixel[0] = value & 0xff ;
+                uiPixel[1] = (value >>8) & 0xff ;
+                uiPixel[2] = (value >>16) & 0xff ;
 
-            fwrite(uiPixel, 1, 3, fp) ;
+                fwrite(uiPixel, 3, 1, fp) ;
+            }
+            fwrite(uiPixel, 1, ost, fp) ;
         }
     }
     else if(bitmapdesc.biBitCount == 4)
     {
         int i, j ;
         char uiPixel ;
+        char buffer[4] ;
         uint8_t iColorIndex ;
         int w = desctriptor.dim[1] ;
         int h = desctriptor.dim[0] ;
+        int w2 = w/2 ;
+        int w2s = (w2/4)*4 ;
+        if(w2s<w2) w2s+=4 ;
+        int ost = w2s - w2 ;
 
         for(i=0;i<h;i++)
-            for(j=0;j<w;j+=2)
         {
+          for(j=0;j<w;j+=2)
+          {
             int k = (h-i-1) * w + j ;
 
             uint32_t value = ((uint32_t*)cPtr)[k] ;
             iColorIndex=0;
             while((iColorIndex<NumColors)&&(Colors[iColorIndex]!=value)) iColorIndex++ ;
-            uiPixel = iColorIndex & 0x0f ;
-            cPtr += 4 ;
+            uiPixel = iColorIndex<<4 ;
+            //cPtr += 4 ;
 
             value = ((uint32_t*)cPtr)[k+1] ;
             iColorIndex=0;
             while((iColorIndex<NumColors)&&(Colors[iColorIndex]!=value)) iColorIndex++ ;
-            uiPixel |= (iColorIndex & 0x0f)<<4 ;
-            cPtr += 4 ;
+            uiPixel |= iColorIndex ;
+            //cPtr += 4 ;
 
             fwrite(&uiPixel, 1, 1, fp) ;
+          }
+          fwrite(&buffer, 1, ost, fp) ;
         }
     }
     else if(bitmapdesc.biBitCount == 8)
     {
         int i, j ;
         uint8_t uiPixel ;
+        char buffer[4] ;
         int iColorIndex = 0 ;
         int w = desctriptor.dim[1] ;
         int h = desctriptor.dim[0] ;
+        int ws = (w/4)*4 ;
+        if(ws<w) ws+=4 ;
+        int ost = ws - w ;
 
         for(i=0;i<h;i++)
-            for(j=0;j<w;j++)
         {
+            for(j=0;j<w;j++)
+          {
             int k = (h-i-1) * w + j ;
 
             uint32_t value = ((uint32_t*)cPtr)[k] ;
             iColorIndex=0;
             while((iColorIndex<NumColors)&&(Colors[iColorIndex]!=value)) iColorIndex++ ;
             uiPixel = iColorIndex & 0xff ;
-            cPtr += 4 ;
+            //cPtr += 4 ;
 
             fwrite(&uiPixel, 1, 1, fp) ;
+          }
+          fwrite(&buffer, 1, ost, fp) ;
         }
     }
 
     fclose(fp) ;
 
     return tee ;
+}
+
+
+
+object *fn_drawbitmap(object *args, object *env)
+{
+  (void) env;
+    void tcp_drawPixel(int x, int y, int color) ;
+    void tcp_setTextColor(int color);
+
+    FILE *fp ;
+    //BITMAPFILEHEADER filedesc ;
+    BITMAPINFOHEADER bitmapdesc ;
+
+    int x = checkinteger(first(args)) ;
+    int y = checkinteger(second(args)) ;
+
+    args = cddr(args) ;
+
+    if(!stringp(car(args)) )
+    {
+          pfstring("\nError: file name must be string\n", pserial);
+          return nil ;
+    }
+
+    char fname[256] ;
+
+    cstring(car(args), fname, 256) ;
+
+    fp = fopen(fname, "rb") ;
+
+    if(!fp) {
+          pfstring("\nError: cannot open file.\n", pserial);
+          return nil ; }
+
+    char fdescbuffer[14] ;
+    fread(fdescbuffer, 1, 14, fp);
+
+    WORD ftype = (*(WORD*)(&fdescbuffer[0])) ;
+    DWORD pixelsbgn = (*(DWORD*)(&fdescbuffer[10])) ;
+    DWORD filesize = (*(DWORD*)(&fdescbuffer[2])) ;
+    //memcpy(fdescbuffer,(char*)&filedesc,  14);
+
+    if(ftype!=0x4d42) {
+          pfstring("\nError: it is not bitmap file.\n", pserial);
+          return nil ; }
+
+    fread(&bitmapdesc, 40, 1, fp);
+
+    array_desc_t desctriptor ;
+
+    desctriptor.ndim = 3 ;
+    desctriptor.dim[0] = bitmapdesc.biHeight ;
+    desctriptor.dim[1] = bitmapdesc.biWidth ;
+    desctriptor.dim[2] = 4 ;
+    desctriptor.size = desctriptor.dim[2]
+            * desctriptor.dim[0] * desctriptor.dim[1] ;
+    desctriptor.type = CHAR ;
+    desctriptor.element_size = 1 ;
+
+    //filldimensionsteps(&desctriptor) ;
+
+    if((bitmapdesc.biBitCount<4)||(bitmapdesc.biBitCount>32)){
+          pfstring("\nError: unkown bitmap pixel format.\n", pserial);
+          return nil ; }
+
+    if(bitmapdesc.biCompression!=0){
+        pfstring("\nError: compressed bitmaps not supported.\n", pserial);
+        return nil ; }
+
+
+
+    int iPixelCount = 0;
+
+  if(bitmapdesc.biBitCount == 16)
+  {
+      int i, j ;
+      uint16_t uiPixel ;
+
+      int w = desctriptor.dim[1] ;
+      int h = desctriptor.dim[0] ;
+      int ws = ((w*2)/4)*4 ;
+      if(ws<(w*2)) ws+=4 ;
+      int ost = ws - (w*2) ;
+
+      for(i=0;i<h;i++)
+      {
+        for(j=0;j<w;j++)
+        {
+          //int k = (h-i-1) * w + j ;
+          fread(&uiPixel, 1, 2, fp) ;
+
+          /*uint32_t value = 0 ;
+          value = (uiPixel & 0x1f)<<3 ;
+          value |= ((uiPixel>>5) & 0x1f)<<3 ;
+          value |= ((uiPixel>>10) & 0x1f)<<3 ;*/
+
+          tcp_drawPixel(x+j, y+(h-i-1), uiPixel);
+        }
+        fread(&uiPixel, 1,ost,fp) ;
+      }
+  }
+  else if(bitmapdesc.biBitCount == 24)
+  {
+      int i, j ;
+      char uiPixel[4] ;
+
+      //fseek(fp, pixelsbgn , SEEK_SET) ;
+      int w = desctriptor.dim[1] ;
+      int h = desctriptor.dim[0] ;
+      //int ost = (w*3) % 4 ;
+      int ws = ((w*3)/4)*4 ;
+      if(ws<(w*3)) ws+=4 ;
+      int ost = ws - (w*3) ;
+
+      for(i=0;i<h;i++)
+      {
+        for(j=0;j<w;j++)
+        {
+          //int k = (h-i-1) * w + j ;
+          fread(uiPixel, 1, 3, fp) ;
+
+          uint32_t value = 0 ;
+          value =  ((uint32_t)(uiPixel[2])>>3) & 0x001f ;
+          value |= ((uint32_t)(uiPixel[1])<<3) & 0x07e0 ;
+          value |= ((uint32_t)(uiPixel[0])<<8) & 0xf800 ;
+
+          tcp_drawPixel(x+j, y+(h-i-1), value);
+         }
+         fread(uiPixel, 1,ost,fp) ;
+      }
+  }
+  else if(bitmapdesc.biBitCount == 32)
+  {
+      int i, j ;
+      char uiPixel[4] ;
+
+      //fseek(fp, pixelsbgn , SEEK_SET) ;
+
+      int w = desctriptor.dim[1] ;
+      int h = desctriptor.dim[0] ;
+
+      for(i=0;i<h;i++)
+          for(j=0;j<w;j++)
+      {
+          //int k = (h-i-1) * w + j ;
+          fread(uiPixel, 1, 4, fp) ;
+
+          uint32_t value = 0 ;
+          value =  (uiPixel[0]>>3) & 0x001f ;
+          value |= (uiPixel[1]<<3) & 0x07e0 ;
+          value |= (uiPixel[2]<<8) & 0xf800 ;
+
+          tcp_drawPixel(x+j, y+(h-i-1),  value ) ;
+      }
+  }
+  else if(bitmapdesc.biBitCount == 4)
+  {
+      int i, j ;
+      char uiPixel[4] ;
+      //int NumColors = 16 ;
+      uint32_t Colors[16] ;
+
+      fread(Colors, 1, sizeof(Colors),fp) ;
+
+      //fseek(fp, pixelsbgn , SEEK_SET) ;
+
+      int w = desctriptor.dim[1] ;
+      int h = desctriptor.dim[0] ;
+      int w2 = w/2 ;
+      int w2s = (w2/4)*4 ;
+      if(w2s<w2) w2s+=4 ;
+      int ost = w2s - w2 ;
+
+      for(i=0;i<h;i++)
+      {
+        for(j=0;j<w;j+=2)
+        {
+          //int k = (h-i-1) * w + j ;
+
+          fread(uiPixel, 1, 1, fp) ;
+          uint32_t value ;
+          uint8_t *col = (uint8_t*)&Colors[(uiPixel[0]>>4) & 0xf] ;
+          value =  (col[0]>>3) & 0x001f ;
+          value |= (col[1]<<3) & 0x07e0 ;
+          value |= (col[2]<<8) & 0xf800 ;
+
+          tcp_drawPixel(x+j, y+(h-i-1), value ) ;
+
+          col = (uint8_t*)&Colors[uiPixel[0] & 0xf] ;
+          value =  (col[0]>>3) & 0x001f ;
+          value |= (col[1]<<5) & 0x07e0 ;
+          value |= (col[2]<<9) & 0xf800 ;
+
+          tcp_drawPixel(x+j+1, y+(h-i-1), value ) ;
+
+          iPixelCount += 2 ;
+        }
+      fread(uiPixel, 1,ost,fp) ;
+    }
+  }
+  else if(bitmapdesc.biBitCount == 8)
+  {
+      int i, j ;
+      unsigned char uiPixel[4] ;
+      //int NumColors = 256 ;
+      uint32_t Colors[256] ;
+
+      fread(Colors, 1, sizeof(Colors),fp) ;
+
+      //fseek(fp, pixelsbgn , SEEK_SET) ;
+
+      int w = desctriptor.dim[1] ;
+      int h = desctriptor.dim[0] ;
+      int ws = (w/4)*4 ;
+      if(ws<w) ws+=4 ;
+      int ost = ws - w ;
+
+      for(i=0;i<h;i++)
+      {
+        for(j=0;j<w;j++)
+        {
+          //int k = (h-i-1) * w + j ;
+
+          fread(uiPixel, 1, 1, fp) ;
+          uint8_t *col = (uint8_t*)&Colors[uiPixel[0]] ;
+          uint32_t value ;
+          value =  (col[0]>>3) & 0x001f ;
+          value |= (col[1]<<3) & 0x07e0 ;
+          value |= (col[2]<<8) & 0xf800 ;
+
+          tcp_drawPixel(x+j, y+(h-i-1), value ) ;
+
+          iPixelCount += 1 ;
+        }
+        fread(uiPixel, 1,ost,fp) ;
+      }
+  }
+
+    fclose(fp) ;
+
+return tee ;
 }

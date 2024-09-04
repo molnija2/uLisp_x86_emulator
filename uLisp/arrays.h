@@ -24,6 +24,7 @@ const char string_getimage[] = "get-image";
 const char string_putimage[] = "put-image";
 const char string_loadbitmap[] = "load-bitmap";
 const char string_savebitmap[] = "save-bitmap";
+const char string_drawbitmap[] = "draw-bitmap";
 
 
 const char string_integer[] = "integer";
@@ -51,11 +52,15 @@ const char doc_getimage[] = "(get-image x y w h)\n"
 const char doc_putimage[] = "(put-image x y array)\n"
 "Put image from array to screen rectangle area.";
 
-const char doc_loadbitmap[] = "(load-image file)\n"
+const char doc_loadbitmap[] = "(load-bitmap file)\n"
 "Get image from file.";
 
-const char doc_savebitmap[] = "(save-image file)\n"
+const char doc_savebitmap[] = "(save-bitmap file)\n"
 "Save image to file.";
+
+const char doc_drawbitmap[] = "(draw-bitmap x y file)\n"
+"Draw image from file.";
+
 
 
 #endif // ARRAYS_H

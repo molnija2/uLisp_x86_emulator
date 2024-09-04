@@ -323,6 +323,7 @@ builtin_t lookupbuiltin (char* c);
 void array2info (object *array) ;
 void InitArray2();
 object *array2dimensions(object *array);
+int32_t array2_lenght(object *arg) ;
 
 int fillpattern(char *mask, char *pattern);
 int findpattern(char *pattern, char *name);
@@ -337,7 +338,7 @@ object *fn_putimage(object *args, object *env) ;
 object *fn_getimage(object *args, object *env) ;
 object *fn_loadbitmap(object *args, object *env) ;
 object *fn_savebitmap(object *args, object *env) ;
-
+object *fn_drawbitmap(object *args, object *env) ;
 
 
 #endif //___ULISP_H___

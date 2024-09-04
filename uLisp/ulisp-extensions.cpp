@@ -225,6 +225,7 @@ const tbl_entry_t lookup_table2[]  = {
     { string_putimage, fn_putimage, 0233, doc_putimage },
     { string_loadbitmap, fn_loadbitmap, 0211, doc_loadbitmap },
     { string_savebitmap, fn_savebitmap, 0222, doc_savebitmap },
+    { string_drawbitmap, fn_drawbitmap, 0233, doc_drawbitmap },
 
 
     { stringquit, fn_quit, 0203, docquit },
