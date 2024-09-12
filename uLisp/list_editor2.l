@@ -620,6 +620,11 @@
 
 
 
+(defun print-spaces (n s)
+  (dotimes (i n) (write-string " " s) )
+)
+
+
 ;  Print program into GFX or SDCADR stream
   (defun print-list  (lst0 list_level len s)
     (progn

@@ -5,9 +5,6 @@
  (defvar Test 0)
  (defvar knowleges_new nil)
 
-  (defun print-spaces (n s)
-    (dotimes (i n) (write-string " " s) )
-  )
 
  (defun program-line-Height ( ) (+ FontHeight 4))
 
