@@ -8,7 +8,7 @@ the server was previously running.
 
 Two archives are separate projects that are built by QtCreator.
 
-1. Unpack uLisp.zip and qDisplayServer archives separately.
+1. Download uLisp and qDisplayServer directories (or unpack uLisp.zip and qDisplayServer archives separately).
 2. Build them using QtCreator.
 3. Run qDisplayServer.
 4. Copy the "*.l" files (examples in Lisp) to the directory where the uLisp executable is located.
