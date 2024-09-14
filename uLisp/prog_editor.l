@@ -1,8 +1,9 @@
 (progn
 
+  (defun program-line-Height ( ) (+ FontHeight 4))
+
   (defvar  program_line 0)
 
-;  Print program to GFX stream for Program-Editor
   (defun draw-program  (lst0 list_level len scrolly)
    (let ((index 0) (lst_len (length lst0))
          (WindowHeight (- ListEditorHeight (* (program-line-Height) 1)))

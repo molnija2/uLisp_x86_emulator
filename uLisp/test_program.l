@@ -6,7 +6,6 @@
  (defvar knowleges_new nil)
 
 
- (defun program-line-Height ( ) (+ FontHeight 4))
 
  (defun editprg () (setq knowleges_new (list-editor knowleges)))
  (defun loadwsp () (load-image))
