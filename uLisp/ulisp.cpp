@@ -29,10 +29,11 @@ char LispLibrary[] = R"lisplibrary(",
 
 "(defun load-program (filename)
  (with-sd-card (s filename) (read s)))",
-"(defvar list_editor (load-program "list_editor.l"))",
-"(eval list_editor)"
 
 ")lisplibrary";
+
+//"(defvar list_editor (load-program "list_editor.l"))",
+//"(eval list_editor)"
 
 
 /*(defvar knowleges (load-program "test_program.l"))
@@ -6123,17 +6124,21 @@ object *fn_directory (object *args, object *env) {
             while((pattern_bgn!=dirname_string)&&(*pattern_bgn!='/')) pattern_bgn -- ;
             if(*pattern_bgn=='/')
             {
-                *pattern_bgn = 0x0 ;
                 pattern_bgn ++ ;
+                strcpy(pattern_string, pattern_bgn);
+                *pattern_bgn = 0x0 ;
             }
-            strcpy(pattern_string, pattern_bgn);
-            if(!(*dirname_string))
+            else
             {
-                strcpy(dirname_string, "/"); // Dir name "/" restore
+                strcpy(pattern_string, dirname_string);
+                getcwd(dirname_string, 256);
             }
         }
-        args = cdr(args);
       }
+  }
+  else
+  {
+      getcwd(dirname_string, 256);
   }
 
 

@@ -70,12 +70,18 @@ int read_answear ()
     if(strncmp(buf,"OK",2)==0)
         return 1 ;
 
+    if(strncmp(buf,"ARG",3)==0) return -1 ;
+    if(strncmp(buf,"NO",2)==0) return -2 ;
+
     return 0 ;
 }
 
 
 void tcp_setTextColor (int color)
 {
+    if(color == iCurrentColor) return ;
+    iCurrentColor = color ;
+
     sprintf(buf, "setcolorb") ;
     *(int*)(&buf[9]) = ((color&0x3f)<<3) +((color&0x7c0)<<5)  +((color&0xf800)<<8);
     n = write(sockfd, buf, 13);
@@ -84,6 +90,9 @@ void tcp_setTextColor (int color)
 
 void tcp_setTextBkColor (int color)
 {
+    if(color == iCurrentBkColor) return ;
+    iCurrentBkColor = color ;
+
     sprintf(buf, "setbkcolorb") ;
     *(int*)(&buf[11]) = ((color&0x3f)<<3) +((color&0x7c0)<<5)  +((color&0xf800)<<8);
     n = write(sockfd, buf, 15);
@@ -93,11 +102,11 @@ void tcp_setTextBkColor (int color)
 
 void tcp_setRegularTextColors (int color, int bkcolor)
 {
-    iCurrentColor = color ;
-    iCurrentBkColor = bkcolor ;
-
     tcp_setTextBkColor(bkcolor);
     tcp_setTextColor(color);
+
+    iCurrentColor = color ;
+    iCurrentBkColor = bkcolor ;
 }
 
 
@@ -221,6 +230,7 @@ void tcp_drawPixel (int x, int y, int color)
 
 void tcp_drawLine (int x1, int y1, int x2, int y2, int color)
 {
+    tcp_setTextColor(color) ;
 //    sprintf(buf,"line %d %d %d %d %d:", x1,y1, x2,y2, color) ;
 //    n = write(sockfd, buf, strlen(buf));
     strcpy(buf,"lineb") ;
@@ -626,6 +636,34 @@ int tcp_getfontwidth ()
     return i ;
 }
 
+
+int tcp_gettextwidth (char *str)
+{
+    int i ;
+
+    sprintf(buf,"textwidthb%s", str) ;
+    n = write(sockfd, buf, strlen(buf));
+
+    buf[0] = 0 ;
+    n = read(sockfd, &i, sizeof(int));
+
+    return i ;
+}
+
+
+
+
+int tcp_setfontname (int height, int style, char *name)
+{
+    strcpy(buf,"fontnmb") ;
+    *(int*)(&buf[7]) = height ;
+    *(int*)(&buf[11]) = style ;
+    strcpy(&buf[15], name) ;
+
+    n = write(sockfd, buf, 13+strlen(name));
+
+    return read_answear() ;
+}
 
 
 int InitTcpGraphics()

@@ -303,17 +303,13 @@ int32_t array2_lenght(object *arg)
 */
 void delarray2 (object *array) {
   array_desc_t *descriptor = (array_desc_t*)array->pointer ;
-  descriptor->ndim = 0;
-  descriptor->dim[0] = 0 ;
-  descriptor->size = 0 ;
-  descriptor->element_size = 0 ;
-  free(descriptor) ;
+  free((char*)descriptor) ;
   array->pointer = (void*)NULL ;
   array->type = SYMBOL ;
 }
 
 
-object *fn_delarray2p (object *args, object *env) {
+object *fn_delarray2 (object *args, object *env) {
   (void) env;
     object *arg = first(args) ;
 
@@ -322,9 +318,10 @@ object *fn_delarray2p (object *args, object *env) {
         if(array2p(arg))
         {
             delarray2(arg) ;
+            return tee ;
         }
     }
-  return array2p(first(args)) ? tee : nil;
+  return nil;
 }
 
 
@@ -1125,9 +1122,9 @@ object *fn_drawbitmap(object *args, object *env)
           fread(uiPixel, 1, 4, fp) ;
 
           uint32_t value = 0 ;
-          value =  (uiPixel[0]>>3) & 0x001f ;
+          value =  (uiPixel[2]>>3) & 0x001f ;
           value |= (uiPixel[1]<<3) & 0x07e0 ;
-          value |= (uiPixel[2]<<8) & 0xf800 ;
+          value |= (uiPixel[0]<<8) & 0xf800 ;
 
           tcp_drawPixel(x+j, y+(h-i-1),  value ) ;
       }
@@ -1159,16 +1156,16 @@ object *fn_drawbitmap(object *args, object *env)
           fread(uiPixel, 1, 1, fp) ;
           uint32_t value ;
           uint8_t *col = (uint8_t*)&Colors[(uiPixel[0]>>4) & 0xf] ;
-          value =  (col[0]>>3) & 0x001f ;
+          value =  (col[2]>>3) & 0x001f ;
           value |= (col[1]<<3) & 0x07e0 ;
-          value |= (col[2]<<8) & 0xf800 ;
+          value |= (col[0]<<8) & 0xf800 ;
 
           tcp_drawPixel(x+j, y+(h-i-1), value ) ;
 
           col = (uint8_t*)&Colors[uiPixel[0] & 0xf] ;
-          value =  (col[0]>>3) & 0x001f ;
-          value |= (col[1]<<5) & 0x07e0 ;
-          value |= (col[2]<<9) & 0xf800 ;
+          value =  (col[2]>>3) & 0x001f ;
+          value |= (col[1]<<3) & 0x07e0 ;
+          value |= (col[0]<<8) & 0xf800 ;
 
           tcp_drawPixel(x+j+1, y+(h-i-1), value ) ;
 
@@ -1203,9 +1200,9 @@ object *fn_drawbitmap(object *args, object *env)
           fread(uiPixel, 1, 1, fp) ;
           uint8_t *col = (uint8_t*)&Colors[uiPixel[0]] ;
           uint32_t value ;
-          value =  (col[0]>>3) & 0x001f ;
+          value =  (col[2]>>3) & 0x001f ;
           value |= (col[1]<<3) & 0x07e0 ;
-          value |= (col[2]<<8) & 0xf800 ;
+          value |= (col[0]<<8) & 0xf800 ;
 
           tcp_drawPixel(x+j, y+(h-i-1), value ) ;
 

@@ -161,6 +161,46 @@ object *fn_kbhit (object *args, object *env) {
 
 
 
+object *fn_setfontname (object *args, object *env) {
+  (void) env;
+  char fontname_string[256] ;
+
+  int height, style ;
+
+    if(stringp(car(args))) cstring(car(args), fontname_string, 256) ;
+    else  {  pfstring("\nFont name must be string.", pserial); return nil; }
+    args = cdr(args);
+
+    if(integerp(car(args)))
+        height = checkinteger(car(args)) ;
+    else  {  pfstring("\nFont height must be integer.", pserial); return nil; }
+    args = cdr(args);
+
+    if(integerp(car(args)))  style = checkinteger(car(args)) ;
+    else  {  pfstring("\nFont style must be integer 0-3.", pserial); return nil; }
+
+    tcp_setfontname(height, style, fontname_string) ;
+  return tee;
+}
+
+
+object *fn_gettextwidth (object *args, object *env) {
+  (void) env;
+  char string[256] ;
+
+    if(stringp(car(args))) cstring(car(args), string, 256) ;
+    else  {  pfstring("\nArgument must be string.", pserial); return nil; }
+
+    int w = tcp_gettextwidth(string) ;
+  return number(w);
+}
+
+
+object *fn_getfontheight (object *args, object *env) {
+  (void) env;
+  int w = tcp_getfontheight() ;
+  return number(w);
+}
 
 
 // Symbol names
@@ -173,6 +213,13 @@ const char stringtouch_setcal[] = "touch-setcal";
 const char stringtouch_printcal[] = "touch-printcal";
 const char stringquit[] = "quit";
 const char string_kbhit[] = "kbhit" ;
+
+const char string_setfontname[] = "setfontname" ;
+const char string_gettextwidth[] = "gettextwidth" ;
+const char string_getfontheight[] = "getfontheight" ;
+
+
+
 
 
 // Documentation strings
@@ -200,6 +247,17 @@ const char doc_kbhit[] = "(kbhit) - test whether any keyboard keys hits.\n"
 " Returns t if ney char symbols are available"
 "and otherwise returnsnil.";
 
+const char doc_setfontname[]  = "(setfontname NAME Height Style)\n"
+"Search and sets the current font with NAME, Height of symbils and Style."
+"Returns t if succesful anr nil otherwise.";
+
+const char doc_gettextwidth[]  = "(gettextwidth STRING)\n"
+"Returns graphical width of STRING in pixels using current font size.\n";
+
+const char doc_getfontheight[]  = "(getfontheight)\n"
+"Returns symbols graphical height in pixels using current font size.";
+
+
 
 // Symbol lookup table
 const tbl_entry_t lookup_table2[]  = {
@@ -212,6 +270,7 @@ const tbl_entry_t lookup_table2[]  = {
     { stringtouch_setcal, fn_touch_setcal, 0217, doctouch_setcal },
     { stringtouch_printcal, fn_touch_printcal, 0200, doctouch_printcal },
     { string_makearray2, fn_makearray2, 0215, doc_makearray2 },
+    { string_delarray2, fn_delarray2, 0215, doc_delarray2 },
 
     { string_aref2, fn_aref2, 0227, doc_aref2 },
     { string_probefile, fn_probefile, 0211, doc_probefile },
@@ -219,6 +278,7 @@ const tbl_entry_t lookup_table2[]  = {
     { string_copyfile, fn_copyfile, 0222, doc_copyfile },
     { string_deletefile, fn_deletefile, 0211, doc_deletefile },
     { string_ensuredirectoriesexist, fn_ensuredirectoriesexist, 0211, doc_ensuredirectoriesexist },
+    { string_deletedir, fn_deletedir, 0211, doc_deletedir },
 
     { string_kbhit, fn_kbhit, 0200, doc_kbhit },
     { string_getimage, fn_getimage, 0244, doc_getimage },
@@ -226,6 +286,11 @@ const tbl_entry_t lookup_table2[]  = {
     { string_loadbitmap, fn_loadbitmap, 0211, doc_loadbitmap },
     { string_savebitmap, fn_savebitmap, 0222, doc_savebitmap },
     { string_drawbitmap, fn_drawbitmap, 0233, doc_drawbitmap },
+
+
+    { string_setfontname, fn_setfontname, 0233, doc_setfontname },
+    { string_gettextwidth, fn_gettextwidth, 0211, doc_gettextwidth },
+    { string_getfontheight, fn_getfontheight, 0211, doc_getfontheight },
 
 
     { stringquit, fn_quit, 0203, docquit },

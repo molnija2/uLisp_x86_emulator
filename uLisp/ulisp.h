@@ -317,7 +317,7 @@ object *fn_makearray2 (object *args, object *env);
 object *fn_aref2 (object *args, object *env);
 void delarray2 (object *array) ;
 object *fn_array2p (object *args, object *env) ;
-object *fn_delarray2p (object *args, object *env) ;
+object *fn_delarray2 (object *args, object *env) ;
 void printarray2 (object *array, pfun_t pfun);
 builtin_t lookupbuiltin (char* c);
 void array2info (object *array) ;
@@ -333,12 +333,16 @@ object *fn_deletefile (object *args, object *env);
 object *fn_renamefile (object *args, object *env);
 object *fn_copyfile (object *args, object *env);
 object *fn_ensuredirectoriesexist(object *args, object *env);
+object *fn_deletedir (object *args, object *env);
 
 object *fn_putimage(object *args, object *env) ;
 object *fn_getimage(object *args, object *env) ;
 object *fn_loadbitmap(object *args, object *env) ;
 object *fn_savebitmap(object *args, object *env) ;
 object *fn_drawbitmap(object *args, object *env) ;
+
+object *fn_getfontheight (object *args, object *env) ;
+object *fn_gettextwidth (object *args, object *env) ;
 
 
 #endif //___ULISP_H___

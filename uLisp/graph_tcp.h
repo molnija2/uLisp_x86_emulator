@@ -39,6 +39,8 @@ int tcp_getx ();
 int tcp_gety ();
 int tcp_getfontheight ();
 int tcp_getfontwidth ();
+int tcp_setfontname(int height, int style, char *name) ;
+int tcp_gettextwidth (char *str) ;
 
 
 #endif // GRAPH_TCP_H

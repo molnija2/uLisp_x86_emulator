@@ -9,7 +9,7 @@
  (defvar FontHeight 11)
 
  (defvar ColorBk_LineEditor (rgb 255 255 255))
- (defvar ColorBk_Editor (rgb 0 0 0))
+ (defvar ColorBk_Editor (rgb 40 40 40))
  (defvar ColorBk_EditorH (rgb 200 100 100))
  (defvar Color_LineEditor (rgb 0 0 0))
  (defvar Color_CursorEditor (rgb 255 255 255))
@@ -588,8 +588,6 @@
 
       (if (> len 0)
        (progn
-        (makunbound 'posx)
-        (makunbound 'posy)
         (setq posx 0)
         (setq posy 0)
        )

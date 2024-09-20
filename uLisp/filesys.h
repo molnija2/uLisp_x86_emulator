@@ -6,6 +6,7 @@
 
 const char string_probefile[] = "probe-file";
 const char string_deletefile[] = "delete-file";
+const char string_deletedir[] = "delete-dir";
 const char string_renamefile[] = "rename-file";
 const char string_copyfile[] = "copy-file";
 const char string_ensuredirectoriesexist[] = "ensure-directories-exist";
@@ -19,6 +20,10 @@ const char doc_probefile[] = "(probe-file pathspec)\n"
 
 const char doc_deletefile[] = "(delete-file pathspec)\n"
 "delete specified file.\n"
+" Returns true if success and otherwise returns nil.";
+
+const char doc_deletedir[] = "(delete-dir pathspec)\n"
+"delete specified directory.\n"
 " Returns true if success and otherwise returns nil.";
 
 const char doc_renamefile[] = "(rename-file filespec newfile)\n"
