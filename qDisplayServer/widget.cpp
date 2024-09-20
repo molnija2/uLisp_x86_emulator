@@ -233,7 +233,7 @@ int Widget::GetArguments(char *str, int len)
   while(i<len)
   {
     char *cPtr = cOperand[iArg] ;
-    while(((*str==' ')||(*str==',')||(*str==':')||(*str=='\n'))&&(i<len))
+    while(((*str==' ')||(*str==',')||(*str==0)||(*str=='\n'))&&(i<len))
     {
         str++ ;
         i++ ;
@@ -242,7 +242,7 @@ int Widget::GetArguments(char *str, int len)
     if(i == len) return iArg ;
 
 
-    while(((*str!=' ')&&(*str!=',')&&(*str!='\n')&&(*str!=':'))&&(i<len))
+    while(((*str!=' ')&&(*str!=',')&&(*str!='\n')&&(*str!=0))&&(i<len))
     {
         *cPtr++ = *str++ ;
         i++ ;
@@ -389,7 +389,40 @@ void Widget::startRead()
         }
         break ;
 
-    case 'a':
+     case 't':
+         if(strncmp(buffer,"textwidth", 9)==0)
+         {
+           if(buffer[9]=='b')
+           {
+               unsigned int v ;
+               int l = len - 10 ;
+
+               // miss 0x00-symbols
+               while((buffer[l-1]==0)&&(l>0)) l-- ;
+
+               v = this->lcd_getFontWidth() * l ;
+               client->write((char*)(&v), sizeof(int) );
+               break ;
+           }
+
+           int n = GetArguments(buffer, len) ;
+
+           if(n>1)
+           {
+               int l = len - 10,  k = 10 ;
+
+               // miss ' '-symbols
+               while((buffer[k]==' ')&&(l>0)) { l-- ; k++ ;}
+               // miss 0x00-symbols
+               while((buffer[l-1]==0)&&(l>0)) l-- ;
+
+                sprintf(buffer,"%d\n", this->lcd_getFontWidth() * l) ;
+                client->write(buffer, strlen(buffer) );
+           }
+         }
+         break ;
+
+     case 'a':
         if(strncmp(buffer,"arc__",5)==0)
         {
 
@@ -1029,12 +1062,12 @@ void Widget::startRead()
         break ;
 
     case 'l':
-        if(strncmp(buffer,"line ",5)==0)
+        if(strncmp(buffer,"line",4)==0)
         {
-            if(buffer[5]=='b')
+            if(buffer[4]=='b')
             {
-                DrawLine(*(int*)(&buffer[6]),*(int*)(&buffer[6+sizeof(int)]),
-                        *(int*)(&buffer[6+sizeof(int)*2]),*(int*)(&buffer[6+sizeof(int)*3])) ;
+                DrawLine(*(int*)(&buffer[5]),*(int*)(&buffer[5+sizeof(int)]),
+                        *(int*)(&buffer[5+sizeof(int)*2]),*(int*)(&buffer[5+sizeof(int)*3])) ;
                 client->write("OK\n", 3);
                 break ;
             }
@@ -1135,8 +1168,9 @@ void Widget::startRead()
 
             if(buffer[6]=='b')
             {
-                lcd_setFontName(&buffer[7+sizeof(int)*2], *(int*)(&buffer[7]),*(int*)(&buffer[7+sizeof(int)]) ) ;
-                client->write("OK\n", 3);
+                if(1==lcd_setFontName(&buffer[7+sizeof(int)*2], *(int*)(&buffer[7]),*(int*)(&buffer[7+sizeof(int)]) ) )
+                    client->write("OK\n", 3);
+                else client->write("NO\n", 3);
                 break ;
             }
 
@@ -1144,8 +1178,9 @@ void Widget::startRead()
 
            if(n>2)
            {
-               lcd_setFontName( cOperand[1], atoi(cOperand[2]), atoi(cOperand[3]) ) ;
-               client->write("OK\n", 3);
+               if(1==lcd_setFontName( cOperand[3], atoi(cOperand[1]), atoi(cOperand[2]) ) )
+                   client->write("OK\n", 3);
+                else client->write("NO\n", 3);
            }
            else
                client->write("ARG\n", 4);
@@ -1666,8 +1701,8 @@ void Widget::lcd_RegisterFonts()
 
     RegisterNewFont(27, 15, 0, 0, "DejaVu Sans" , (uint16_t*)(font_Deja_Book_15_27_hx));
     RegisterNewFont(27, 15, 0, 0, "DejaVu Sans" , (uint16_t*)(font_Deja_Bold_15_27_hx));
-    RegisterNewFont(27, 16, 1,0,"DejaVu Sans", (uint16_t*)(font_Deja_Oblique_16_27_hx)) ;
-    RegisterNewFont(27, 16, 1,0,"DejaVu Sans", (uint16_t*)(font_Deja_Bold_Oblique_16_27_hx)) ;
+    RegisterNewFont(27, 16, 1, 0,"DejaVu Sans", (uint16_t*)(font_Deja_Oblique_16_27_hx)) ;
+    RegisterNewFont(27, 16, 1, 0,"DejaVu Sans", (uint16_t*)(font_Deja_Bold_Oblique_16_27_hx)) ;
 
     RegisterNewFont(22, 14, 0, 0, "Nimbus Mono L",(uint16_t*)(font_Nimb_Regular_14_22_hx)) ;
     RegisterNewFont(21, 16, 1, 0, "Nimbus Mono L",(uint16_t*)(font_Nimb_Regular_Oblique_16_21_hx)) ;
