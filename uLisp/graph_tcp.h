@@ -35,11 +35,17 @@ void tcp_invertDisplay(int On) ;
 
 int tcp_getmaxx ();
 int tcp_getmaxy ();
+int tcp_getscrmaxx ();
+int tcp_getscrmaxy ();
 int tcp_getx ();
 int tcp_gety ();
+int tcp_setviewport(int x1, int y1, int x2, int y2) ;
 int tcp_getfontheight ();
 int tcp_getfontwidth ();
+int getCharHeight();
+int getCharWidth();
 int tcp_setfontname(int height, int style, char *name) ;
+int tcp_getfontinfo(int index, char *buffer, int *fsize, int *fstyle) ;
 int tcp_gettextwidth (char *str) ;
 
 

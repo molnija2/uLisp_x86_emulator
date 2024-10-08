@@ -334,12 +334,17 @@ object *fn_renamefile (object *args, object *env);
 object *fn_copyfile (object *args, object *env);
 object *fn_ensuredirectoriesexist(object *args, object *env);
 object *fn_deletedir (object *args, object *env);
+object *fn_uiopchdir(object *args, object *env);
+object *fn_uiopgetcwd(object *args, object *env);
+
 
 object *fn_putimage(object *args, object *env) ;
 object *fn_getimage(object *args, object *env) ;
 object *fn_loadbitmap(object *args, object *env) ;
 object *fn_savebitmap(object *args, object *env) ;
 object *fn_drawbitmap(object *args, object *env) ;
+object *fn_imagewidth(object *args, object *env) ;
+object *fn_imageheight(object *args, object *env) ;
 
 object *fn_getfontheight (object *args, object *env) ;
 object *fn_gettextwidth (object *args, object *env) ;

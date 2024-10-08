@@ -15,6 +15,7 @@
 #define BUFSIZE 1024
 
 
+void delay (int ms);
 
 
 
@@ -581,6 +582,32 @@ int tcp_getmaxy ()
     return i ;
 }
 
+int tcp_getscrmaxx ()
+{
+    int i ;
+
+    sprintf(buf,"getscrmaxxb:") ;
+    n = write(sockfd, buf, strlen(buf));
+
+    buf[0] = 0 ;
+    n = read(sockfd, &i, sizeof(int));
+
+    return i ;
+}
+
+int tcp_getscrmaxy ()
+{
+    int i ;
+
+    sprintf(buf,"getscrmaxyb:") ;
+    n = write(sockfd, buf, strlen(buf));
+
+    buf[0] = 0 ;
+    n = read(sockfd, &i, sizeof(int));
+
+    return i ;
+}
+
 
 int tcp_getx ()
 {
@@ -660,9 +687,52 @@ int tcp_setfontname (int height, int style, char *name)
     *(int*)(&buf[11]) = style ;
     strcpy(&buf[15], name) ;
 
-    n = write(sockfd, buf, 13+strlen(name));
+    n = write(sockfd, buf, 15+strlen(name));
 
-    return read_answear() ;
+    int ret = read_answear() ;
+
+    if(ret == 1)
+    {
+        iCharHeight = tcp_getfontheight() ;
+        iCharWidth = tcp_getfontwidth() ;
+    }
+
+    return ret ;
+}
+
+int tcp_getfontinfo(int index, char *buffer, int *fsize, int *fstyle)
+{
+    sprintf(buf,"getfontinfo %d", index) ;
+
+    n = write(sockfd, buf, strlen(buf));
+
+    buffer[0] = 0 ;
+    n = read(sockfd, buffer, BUFSIZE);
+
+
+    if((n>0) && (strncmp(buffer,"NO",2)!=0))
+    {
+        char *sep, *cPtr ;
+
+        sep = strchr(buffer,',') ;
+        if(sep)
+        {
+            *sep++ = 0x0 ;
+            cPtr = sep ;
+            *fsize = atoi(cPtr) ;
+
+            sep = strchr(cPtr,',') ;
+            if(sep)
+            {
+                *sep++ = 0x0 ;
+                cPtr = sep ;
+                *fstyle = atoi(cPtr) ;
+                return 1;
+            }
+        }
+    }
+
+    return 0 ;
 }
 
 
@@ -722,7 +792,16 @@ int InitTcpGraphics()
 }
 
 
+int getCharHeight ()
+{
+    return iCharHeight ;
+}
 
+
+int getCharWidth ()
+{
+    return iCharWidth ;
+}
 
 
 typedef struct smouse_state{
@@ -737,13 +816,16 @@ static mouse_state_type mouse_state ;
 
 int MouseStateButtons ()
 {
-    sprintf(buf,"getmousestat:") ;
+    sprintf(buf,"getmousestatb") ;
     n = write(sockfd, buf, strlen(buf));
 
     buf[0] = 0 ;
-    n = read(sockfd, &mouse_state, sizeof(int));
+    n = read(sockfd, &mouse_state, sizeof(mouse_state));
 
-return mouse_state.LeftButtonState ;
+    delay (1);
+
+return mouse_state.LeftButtonState | mouse_state.RightButtonState<<1
+                                   | mouse_state.MidButtonState<<2;
 }
 
 int MouseStateX ()
@@ -1120,7 +1202,6 @@ char *tcp_getimage(int x,int y,int w,int h )
 }
 
 
-void delay (int ms);
 
 
 int tcp_putimage(int x, int y, char  *array )
@@ -1151,5 +1232,19 @@ int tcp_putimage(int x, int y, char  *array )
         array += n ;
     }
 
+    return read_answear() ;
+}
+
+
+
+int tcp_setviewport(int x1, int y1, int x2, int y2)
+{
+    strcpy(buf,"setviewportb") ;
+    *(int*)(&buf[12]) = x1 ;
+    *(int*)(&buf[16]) = y1 ;
+    *(int*)(&buf[20]) = x2 ;
+    *(int*)(&buf[24]) = y2 ;
+
+    n = write(sockfd, buf, 28);
     return read_answear() ;
 }

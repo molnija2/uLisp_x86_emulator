@@ -19,12 +19,15 @@ typedef struct {
 const char string_makearray2[] = "make-array*";
 const char string_aref2[] = "aref*";
 const char string_delarray2[] = "del-array*";
+const char string_array2p[] = "arrayp*";
 
 const char string_getimage[] = "get-image";
 const char string_putimage[] = "put-image";
 const char string_loadbitmap[] = "load-bitmap";
 const char string_savebitmap[] = "save-bitmap";
 const char string_drawbitmap[] = "draw-bitmap";
+const char string_imagewidth[] = "bitmap-width";
+const char string_imageheight[] = "bitmap-height";
 
 
 const char string_integer[] = "integer";
@@ -46,11 +49,20 @@ const char doc_aref2[] = "(aref* array index [index*])\n"
 const char doc_delarray2[] = "(del-array* array)\n"
 "Delete array.";
 
+const char doc_array2p[] = "(arrayp* item)\n"
+"Returns t if its argument is an array.\n";
+
 const char doc_getimage[] = "(get-image x y w h)\n"
 "Get image from screen rectangle area.";
 
-const char doc_putimage[] = "(put-image x y array)\n"
+const char doc_putimage[] = "(put-image x y array2)\n"
 "Put image from array to screen rectangle area.";
+
+const char doc_imagewidth[] = "(bitmap-width array2)\n"
+"Returns image width in pixels.";
+
+const char doc_imageheight[] = "(bitmap-height array2)\n"
+"Returns image height in pixels.";
 
 const char doc_loadbitmap[] = "(load-bitmap file)\n"
 "Get image from file.";

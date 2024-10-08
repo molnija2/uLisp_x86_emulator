@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <string.h>
 
 #include <unistd.h>
@@ -25,33 +25,38 @@ and otherwise returns the truename of pathspec.
 object *fn_probefile (object *args, object *env) {
 #if defined(sdcardsupport)
   (void) env;
-  int type = 0x08 | 0x04;  // Files and directories
+  int type ;  // Files and directories
   char pattern_string[256] = "*" ;
   char dirname_string[512] = "/";
 
-    if(stringp(car(args)))
+  if (stringp(car(args))) cstring(car(args), pattern_string, 256) ;
+  else {
+    error("argument must be string", car(args)); return nil;
+  }
+
+    cstring(car(args), dirname_string, 256) ;
+    if(dirname_string[strlen(dirname_string)-1] == '/')
     {
-        cstring(car(args), dirname_string, 256) ;
-        if(dirname_string[strlen(dirname_string)-1] == '/')
-        {
-            dirname_string[strlen(dirname_string)-1] = 0x0 ;
-        }
-
-        char *pattern_bgn = &dirname_string[strlen(dirname_string)-1] ;
-        while((pattern_bgn!=dirname_string)&&(*pattern_bgn!='/')) pattern_bgn -- ;
-
-        if(*pattern_bgn=='/')
-        {
-           *pattern_bgn = 0x0 ;
-           pattern_bgn ++ ;
-           strcpy(pattern_string, pattern_bgn);
-        }
-        else
-        {
-            strcpy(pattern_string, dirname_string);
-            getcwd(dirname_string, 256);
-        }
+        dirname_string[strlen(dirname_string)-1] = 0x0 ;
+        type = 0x04;
     }
+    else type = 0x8 ;
+
+    char *pattern_bgn = &dirname_string[strlen(dirname_string)-1] ;
+    while((pattern_bgn!=dirname_string)&&(*pattern_bgn!='/')) pattern_bgn -- ;
+
+    if(*pattern_bgn=='/')
+    {
+       *pattern_bgn = 0x0 ;
+       pattern_bgn ++ ;
+       strcpy(pattern_string, pattern_bgn);
+    }
+    else
+    {
+        strcpy(pattern_string, dirname_string);
+        getcwd(dirname_string, 256);
+    }
+
 
 
 
@@ -320,18 +325,18 @@ object *fn_renamefile (object *args, object *env) {
   char newname_string[256] ;
 
   if(stringp(car(args))) cstring(car(args), filename_string, 256) ;
-  else  {  pfstring("\nrename-file: First argument must be string.", pserial); return nil; }
+  else  {  error("first argument must be string.", car(args)); return nil; }
 
   args = cdr(args);
   if(stringp(car(args)))
         cstring(car(args), newname_string, 256) ;
-  else  {  pfstring("\nrename-file: Second argument must be string.", pserial); return nil; }
+  else  {  error("second argument must be string.", car(args)); return nil; }
 
 
 
 #ifdef LINUX_X64
   if (rename(filename_string, newname_string) != 0)
-        pfstring("Error rename file", pserial);
+        error("cannot rename file", car(args));
       else
         return tee ;
 
@@ -431,53 +436,33 @@ object *fn_ensuredirectoriesexist(object *args, object *env) {
   char dirname_string[256] = "/";
 
   if(stringp(car(args))) cstring(car(args), dirname_string, 256) ;
-  else  {  pfstring("\nError: argument must be string", pserial); return nil; }
-
+  else  {
+      error("\nError: argument must be string", car(args));
+      return nil;
+  }
 
 
 #ifdef LINUX_X64
   DIR *Dir;
   Dir=opendir(dirname_string);
-  if(Dir==NULL){
-    if(-1==mkdir(dirname_string,0777))
-    {  pfstring("problem to create directory", pserial); return nil;  }
+  if(Dir==NULL) {
+    if(-1==mkdir(dirname_string,0777)) {
+        error("problem to create directory", car(args));
+        return nil;
+    }
+    else
+        return tee ;
   }
+
+  closedir(Dir) ;
   return tee;
 
 #else
   SD.begin(SDCARD_SS_PIN);
   File root = SD.open(dirname_string);
-  if (!root){  pfstring("problem reading from SD card", pserial); return nil; }
+  if (!root){  error("problem to create directory", car(args)); return nil; }
 #endif
 
-  while (true) {
-
-#ifdef LINUX_X64
-      struct dirent *Dirent = readdir(Dir);
-      if(!Dirent) break;
-
-      if((Dirent->d_type & type)
-          &&(strcmp((char*)Dirent->d_name, pattern_string ))==0)
-      {
-          closedir(Dir);
-          sprintf(pattern_string,"%s/%s", dirname_string, (char*)Dirent->d_name);
-          remove(pattern_string);
-          return tee;
-      }
-#else
-      File entry = root.openNextFile();
-      if(!entry) break;
-
-      if( (entry.isDirectory() && (type&0x4)) || (!entry.isDirectory() && (type&0x8)) )
-         if(strcmp((char*)entry->name(), pattern_string ) == 0)
-      {
-         sprintf(pattern_string,"%s//%s", dirname_string, (char*)Dirent->d_name);
-         root.remove((char*)pattern_string);
-         root.close();
-         return tee;
-      }
-#endif
-  };
 
 #ifdef LINUX_X64
   closedir(Dir);
@@ -495,5 +480,34 @@ object *fn_ensuredirectoriesexist(object *args, object *env) {
 
 
 
+object *fn_uiopchdir(object *args, object *env) {
+  (void) env;
+  char dirname_string[256] ;
+
+  if(stringp(car(args))) cstring(car(args), dirname_string, 256) ;
+  else  {
+      error("\nError: argument must be string", car(args));
+      return nil;
+  }
+
+
+    if(-1==chdir(dirname_string)) {
+        error("Cannot to change directory", car(args));
+        return nil;
+    }
+
+  return tee;
+}
+
+
+object *fn_uiopgetcwd(object *args, object *env) {
+  (void) env;
+  char dirname_string[256] ;
+
+   getcwd(dirname_string, 256);
+   object *dirname = lispstring((char*)dirname_string) ;
+
+  return dirname;
+}
 
 

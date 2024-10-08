@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 #include "ulisp.h"
@@ -46,6 +47,7 @@ object *fn_now (object *args, object *env) {
 object *fn_touch_press (object *args, object *env) {
   (void) env;
 #ifdef touchscreen_support
+
 
   return  MouseStateButtons() ? tee : nil;
 #else
@@ -198,9 +200,117 @@ object *fn_gettextwidth (object *args, object *env) {
 
 object *fn_getfontheight (object *args, object *env) {
   (void) env;
-  int w = tcp_getfontheight() ;
+  int w = getCharHeight() ; //tcp_getfontheight() ;
   return number(w);
 }
+
+object *fn_getfontwidth (object *args, object *env) {
+  (void) env;
+  int w = getCharWidth() ; //tcp_getfontwidth() ;
+  return number(w);
+}
+
+
+
+object *fn_getfontinfo (object *args, object *env) {
+  (void) env;
+    object *info ;
+    int ifont = 0;
+    char buffer[256];
+    int fsize = 0, fstyle = 0 ;
+
+    if(args)
+    {
+      if(integerp(car(args))) ifont = checkinteger(car(args)) ;
+      else  {  pfstring("\ngetfontinfo : Argument must be integer.", pserial); return nil; }
+
+      int res = tcp_getfontinfo(ifont, buffer, &fsize, &fstyle) ;
+      if(res)
+          info = cons(lispstring(buffer),cons(number(fsize),cons(number(fstyle),nil)));
+
+       return info ;
+    }
+
+    object *head = NULL;
+    object *tail;
+
+    while(tcp_getfontinfo(ifont, buffer, &fsize, &fstyle) )
+    {
+        info = cons(number(ifont),cons(lispstring(buffer),
+                        cons(number(fsize),cons(number(fstyle),nil))));
+
+        object *obj = cons(info,NULL) ;
+        if (head == NULL) head = obj;
+        else cdr(tail) = obj;
+        tail = obj;
+
+        ifont ++ ;
+    }
+
+  return head;
+}
+
+
+
+/*
+  (gfx-setviewport x y w h )
+  Set viewport rectangle with its top left corner at (x,y), with width w,
+  and with height h.
+*/
+object *fn_setviewport (object *args, object *env) {
+  (void) env;
+#ifdef gfxsupport
+  uint16_t params[4];
+  for (int i=0; i<4; i++) { params[i] = checkinteger(car(args)); args = cdr(args); }
+  tcp_setviewport(params[0], params[1], params[2], params[3]);
+#else
+  (void) args;
+#endif
+  return nil;
+}
+
+
+object *fn_getx (object *args, object *env) {
+  (void) env;
+  int w = tcp_getx() ;
+  return number(w);
+}
+
+
+object *fn_gety (object *args, object *env) {
+  (void) env;
+  int w = tcp_gety() ;
+  return number(w);
+}
+
+
+object *fn_getmaxx (object *args, object *env) {
+  (void) env;
+  int w = tcp_getmaxx() ;
+  return number(w);
+}
+
+
+object *fn_getmaxy (object *args, object *env) {
+  (void) env;
+  int w = tcp_getmaxy() ;
+  return number(w);
+}
+
+
+object *fn_getscrmaxx (object *args, object *env) {
+  (void) env;
+  int w = tcp_getscrmaxx() ;
+  return number(w);
+}
+
+
+object *fn_getscrmaxy (object *args, object *env) {
+  (void) env;
+  int w = tcp_getscrmaxy() ;
+  return number(w);
+}
+
 
 
 // Symbol names
@@ -217,6 +327,16 @@ const char string_kbhit[] = "kbhit" ;
 const char string_setfontname[] = "setfontname" ;
 const char string_gettextwidth[] = "gettextwidth" ;
 const char string_getfontheight[] = "getfontheight" ;
+const char string_getfontwidth[] = "getfontwidth" ;
+const char string_getfontinfo[] = "getfontinfo" ;
+
+const char string_setviewport[] = "setviewport" ;
+const char string_getx[] = "getx" ;
+const char string_gety[] = "gety" ;
+const char string_getmaxx[] = "getmaxx" ;
+const char string_getmaxy[] = "getmaxy" ;
+const char string_getscrmaxx[] = "getscrmaxx" ;
+const char string_getscrmaxy[] = "getscrmaxy" ;
 
 
 
@@ -257,6 +377,34 @@ const char doc_gettextwidth[]  = "(gettextwidth STRING)\n"
 const char doc_getfontheight[]  = "(getfontheight)\n"
 "Returns symbols graphical height in pixels using current font size.";
 
+const char doc_getfontwidth[]  = "(getfontwidth)\n"
+"Returns symbols graphical width in pixels using current font size."
+"This function works correctly for a fonts which are have regular symbols width\n";
+
+const char doc_getfontinfo[]  = "(getfontinfo Index)\n"
+"Returns information list about the font with Index."
+" The list contains a name, size and stile, of the font.\n";
+
+const char doc_setviewport[]  = "(setviewport)\n"
+"Sets current view port rectangle.";
+
+const char doc_getx[]  = "(getx)\n"
+"Returns current graphical cursor x-position.";
+
+const char doc_gety[]  = "(gety)\n"
+"Returns current graphical cursor y-position.";
+
+const char doc_getmaxx[]  = "(getmaxx)\n"
+"Returns maximal graphical cursor x-position for a current viewport.";
+
+const char doc_getmaxy[]  = "(getmaxy)\n"
+"Returns maximal graphical cursor y-position for a current viewport.";
+
+const char doc_getscrmaxx[]  = "(getscrmaxx)\n"
+"Returns maximal graphical cursor x-position for full screen.";
+
+const char doc_getscrmaxy[]  = "(getscrmaxy)\n"
+"Returns maximal graphical cursor y-position for full screen.";
 
 
 // Symbol lookup table
@@ -271,6 +419,7 @@ const tbl_entry_t lookup_table2[]  = {
     { stringtouch_printcal, fn_touch_printcal, 0200, doctouch_printcal },
     { string_makearray2, fn_makearray2, 0215, doc_makearray2 },
     { string_delarray2, fn_delarray2, 0215, doc_delarray2 },
+    { string_array2p, fn_array2p, 0211, doc_array2p },
 
     { string_aref2, fn_aref2, 0227, doc_aref2 },
     { string_probefile, fn_probefile, 0211, doc_probefile },
@@ -279,10 +428,14 @@ const tbl_entry_t lookup_table2[]  = {
     { string_deletefile, fn_deletefile, 0211, doc_deletefile },
     { string_ensuredirectoriesexist, fn_ensuredirectoriesexist, 0211, doc_ensuredirectoriesexist },
     { string_deletedir, fn_deletedir, 0211, doc_deletedir },
+    { string_uiopchdir, fn_uiopchdir, 0211, doc_uiopchdir },
+    { string_uiopgetcwd, fn_uiopgetcwd, 0200, doc_uiopgetcwd },
 
     { string_kbhit, fn_kbhit, 0200, doc_kbhit },
     { string_getimage, fn_getimage, 0244, doc_getimage },
     { string_putimage, fn_putimage, 0233, doc_putimage },
+    { string_imagewidth, fn_imagewidth, 0211, doc_imagewidth },
+    { string_imageheight, fn_imageheight, 0211, doc_imageheight },
     { string_loadbitmap, fn_loadbitmap, 0211, doc_loadbitmap },
     { string_savebitmap, fn_savebitmap, 0222, doc_savebitmap },
     { string_drawbitmap, fn_drawbitmap, 0233, doc_drawbitmap },
@@ -290,7 +443,18 @@ const tbl_entry_t lookup_table2[]  = {
 
     { string_setfontname, fn_setfontname, 0233, doc_setfontname },
     { string_gettextwidth, fn_gettextwidth, 0211, doc_gettextwidth },
-    { string_getfontheight, fn_getfontheight, 0211, doc_getfontheight },
+    { string_getfontheight, fn_getfontheight, 0200, doc_getfontheight },
+    { string_getfontwidth, fn_getfontwidth, 0200, doc_getfontwidth },
+    { string_getfontinfo, fn_getfontinfo, 0201, doc_getfontinfo },
+
+    { string_setviewport, fn_setviewport, 0244, doc_setviewport },
+
+    { string_getx, fn_getx, 0200, doc_getx },
+    { string_gety, fn_gety, 0200, doc_gety },
+    { string_getmaxx, fn_getmaxx, 0200, doc_getmaxx },
+    { string_getmaxy, fn_getmaxy, 0200, doc_getmaxy },
+    { string_getscrmaxx, fn_getscrmaxx, 0200, doc_getscrmaxx },
+    { string_getscrmaxy, fn_getscrmaxy, 0200, doc_getscrmaxy },
 
 
     { stringquit, fn_quit, 0203, docquit },

@@ -1099,7 +1099,7 @@ bool eq (object *arg1, object *arg2) {
 }
 
 
-bool stringcompare (object *args, bool lt, bool gt, bool eq);
+int stringcompare (object *args, bool lt, bool gt, bool eq);
 
 /*
   equal - implements Lisp equal
@@ -1684,24 +1684,26 @@ object *lispstring (char *s) {
 /*
   stringcompare - a generic string compare function
   Used to implement the other string comparison functions.
-  If lt is true the result is true if each argument is less than the next argument.
-  If gt is true the result is true if each argument is greater than the next argument.
-  If eq is true the result is true if each argument is equal to the next argument.
+  Returns -1 if the comparison is false, or the index of the first mismatch if it is true.
+  If lt is true the result is true if the first argument is less than the second argument.
+  If gt is true the result is true if the first argument is greater than the second argument.
+  If eq is true the result is true if the first argument is equal to the second argument.
 */
-bool stringcompare (object *args, bool lt, bool gt, bool eq) {
+int stringcompare (object *args, bool lt, bool gt, bool eq) {
   object *arg1 = checkstring(first(args));
   object *arg2 = checkstring(second(args));
-  arg1 = cdr(arg1);
-  arg2 = cdr(arg2);
+  arg1 = cdr(arg1); arg2 = cdr(arg2);
+  int m = 0; chars_t a = 0, b = 0;
   while ((arg1 != NULL) || (arg2 != NULL)) {
-    if (arg1 == NULL) return lt;
-    if (arg2 == NULL) return gt;
-    if (arg1->chars < arg2->chars) return lt;
-    if (arg1->chars > arg2->chars) return gt;
-    arg1 = car(arg1);
-    arg2 = car(arg2);
+    if (arg1 == NULL) return lt ? m : -1;
+    if (arg2 == NULL) return gt ? m : -1;
+    a = arg1->chars; b = arg2->chars;
+    if (a < b) { if (lt) { m = m + sizeof(int); while (a != b) { m--; a = a >> 8; b = b >> 8; } return m; } else return -1; }
+    if (a > b) { if (gt) { m = m + sizeof(int); while (a != b) { m--; a = a >> 8; b = b >> 8; } return m; } else return -1; }
+    arg1 = car(arg1); arg2 = car(arg2);
+    m = m + sizeof(int);
   }
-  return eq;
+  if (eq) { m = m - sizeof(int); while (a != 0) { m++; a = a << 8;} return m;} else return -1;
 }
 
 
@@ -1791,6 +1793,20 @@ char *cstring (object *form, char *buffer, int buflen) {
   or ENDFUNCTIONS if no match is found
 */
 builtin_t lookupbuiltin (char* c) {
+  unsigned int start = tablesize(0);
+  for (int n=1; n>=0; n--) {
+    int entries = tablesize(n);
+    for (int i=0; i<entries; i++) {
+      if (strcasecmp(c, (char*)(table(n)[i].string)) == 0)
+        return (builtin_t)(start + i);
+    }
+    start = 0;
+  }
+  return ENDFUNCTIONS;
+}
+
+// OLD version
+/*builtin_t lookupbuiltin (char* c) {
   unsigned int end = 0, start;
   for (int n=0; n<2; n++) {
     start = end;
@@ -1803,7 +1819,8 @@ builtin_t lookupbuiltin (char* c) {
     }
   }
   return ENDFUNCTIONS;
-}
+}*/
+
 
 
 
@@ -6028,6 +6045,15 @@ object *sp_error (object *args, object *env) {
 
 // SD Card utilities
 
+#ifdef sdcardsupport
+#ifndef LINUX_X64
+void SDBegin() {
+  SD.begin(SDCARD_SS_PIN);
+}
+#endif
+#endif
+
+
 
 /*
  *   File search using '*'-type patterns
@@ -6055,6 +6081,7 @@ int findpattern(char *pattern, char *name)
     while(lenp<=lenn)
     {
         if(strncmp(name,pattern,lenp)==0) return i;
+        //if(strcmp(name,pattern)==0) return i;
         name++ ;
         lenn-- ;
         i++ ;
@@ -6070,23 +6097,48 @@ int selection(char *name, char *filemask )
     char file_pattern[256] ;
     int i;
     int imaskpos = 0, inamepos = 0 ;
-    i = fillpattern(&filemask[imaskpos], file_pattern);
-    if(i==-1) return 1 ;
+    int find ;
+    i = fillpattern(filemask, file_pattern);
+    if(i==-1) return -1 ;
+
     if(i>0)
     {
-        if(strncmp(&file_pattern[imaskpos],&name[inamepos],i)!=0) return 0 ;
+        if(strncmp(file_pattern,name,i)!=0)
+            return 0 ;
     }
 
-    imaskpos += i+1 ;
+    imaskpos += i ; // next position after '*'
+
+    if(filemask[imaskpos] == '*') {
+        find = 1 ;  // search continue
+        imaskpos++ ;
+    }
+    else find = 0 ;
+
     inamepos += i ;
     do{
+        // take mask next fragment between '*' symbols
         i = fillpattern(&filemask[imaskpos], file_pattern);
-        if(i <= 0) return 1 ;
-        inamepos = findpattern(file_pattern, &name[inamepos]);
-        if(inamepos<0) return 0 ;
-        inamepos += i ;
-        imaskpos += i+1 ;
+
+        if(i == -1 ) {
+            if(name[inamepos]==0x0) return 1 ;
+            if(find) return 1 ;   // because mask last symbol is '*'
+        }
+
+        int k = findpattern(file_pattern, &name[inamepos]);
+        if(k==-1) return 0 ;
+
+        imaskpos += i ;
+        inamepos += k ;
+        if(filemask[imaskpos] == '*') {
+            find = 1 ;  // search continue
+            imaskpos++ ;
+        }
+        else
+            if(name[inamepos+i] != 0) return 0 ;
+            // the end of pattern but not end of name
     }while(1) ;
+
 return 0;
 }
 
@@ -6119,21 +6171,28 @@ object *fn_directory (object *args, object *env) {
         else type = 0x8 ;
 
         char *pattern_bgn = strchr(dirname_string,'*') ;
-        if(pattern_bgn)
-        {   // There is pattern string with '*'-symbols
-            while((pattern_bgn!=dirname_string)&&(*pattern_bgn!='/')) pattern_bgn -- ;
-            if(*pattern_bgn=='/')
-            {
-                pattern_bgn ++ ;
-                strcpy(pattern_string, pattern_bgn);
-                *pattern_bgn = 0x0 ;
-            }
-            else
-            {
-                strcpy(pattern_string, dirname_string);
-                getcwd(dirname_string, 256);
-            }
+        if(!pattern_bgn)
+            pattern_bgn = &dirname_string[strlen(dirname_string)-1] ;
+
+        while((pattern_bgn!=dirname_string)&&(*pattern_bgn!='/')) pattern_bgn -- ;
+        if(*pattern_bgn=='/')
+        {
+            pattern_bgn ++ ;
+            strcpy(pattern_string, pattern_bgn);
+            *pattern_bgn = 0x0 ;
         }
+        else
+        {
+            strcpy(pattern_string, dirname_string);
+            getcwd(dirname_string, 256);
+        }
+
+        if(!(*dirname_string))
+            strcpy(dirname_string, "/"); // Dir name "/" restore
+      }
+      else {
+        error("argument must be string",car(args));
+        return nil ;
       }
   }
   else

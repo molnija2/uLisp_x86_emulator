@@ -11,6 +11,9 @@
 #include "bmp.h"
 
 
+char *tcp_getimage(int x,int y,int w,int h) ;
+int tcp_putimage(int x, int y, char  *array ) ;
+
 
 
 /*object *buildarray2(int n, object *def);
@@ -421,8 +424,6 @@ void array2info (object *array) {
 
 
 
-char *tcp_getimage(int x,int y,int w,int h) ;
-int tcp_putimage(int x, int y, char  *array ) ;
 
 
 object *fn_getimage(object *args, object *env)
@@ -432,10 +433,10 @@ object *fn_getimage(object *args, object *env)
   int x=0, y=0, h=0, w=0 ;
   object *obj = args ;
 
-  if(obj) { x = checkinteger(car(obj)) ; obj = cdr(obj); };
-  if(obj) { y = checkinteger(car(obj)) ; obj = cdr(obj); };
-  if(obj) { w = checkinteger(car(obj)) ; obj = cdr(obj); };
-  if(obj) { h = checkinteger(car(obj)) ; };
+  x = checkinteger(car(obj)) ; obj = cdr(obj);
+  y = checkinteger(car(obj)) ; obj = cdr(obj);
+  w = checkinteger(car(obj)) ; obj = cdr(obj);
+  h = checkinteger(car(obj)) ;
 
   char *cPtr = tcp_getimage(x,y,w,h) ;
 
@@ -459,20 +460,62 @@ object *fn_putimage(object *args, object *env)
   object *obj = args ;
   object *a ;
 
-  if(obj) { x = checkinteger(car(obj)) ; obj = cdr(obj); };
-  if(obj) { y = checkinteger(car(obj)) ; obj = cdr(obj); };
-  if(obj) { a = car(obj) ; };
+  x = checkinteger(car(obj)) ; obj = cdr(obj);
+  y = checkinteger(car(obj)) ; obj = cdr(obj);
+  a = car(obj) ;
 
   if(a->type!= ARRAY2) {
-      pfstring("\nError: argument must be array2-type", pserial);
+      error("argument must be array2-type", a);
       return nil ;
   }
-  //array_desc_t *desctriptor ;
+
   int n = tcp_putimage(x,y, (char*)(a->pointer) ) ;
 
-    if(n==0) return nil ;
+  if(n==0) return nil ;
 
 return tee ;
+}
+
+
+
+
+object *fn_imagewidth(object *args, object *env)
+{
+  (void) env;
+  object *obj = args ;
+  object *a ;
+
+  a = car(obj) ;
+
+  if(a->type!= ARRAY2) {
+      error("argument must be array2-type", a);
+      return nil ;
+  }
+
+  array_desc_t *desctriptor = (array_desc_t*)a->pointer ;
+  int n = desctriptor->dim[1] ;
+
+  return number(n) ;
+}
+
+
+object *fn_imageheight(object *args, object *env)
+{
+  (void) env;
+  object *obj = args ;
+  object *a ;
+
+  a = car(obj) ;
+
+  if(a->type!= ARRAY2) {
+      error("argument must be array2-type", a);
+      return nil ;
+  }
+
+  array_desc_t *desctriptor = (array_desc_t*)a->pointer ;
+  int n = desctriptor->dim[0] ;
+
+  return number(n) ;
 }
 
 
@@ -773,7 +816,7 @@ object *fn_savebitmap(object *args, object *env)
 
     if(!array2p(array))
     {
-          pfstring("\nError: first argument must be array2.\n", pserial);
+          error("first argument must be array2.\n", car(obj));
           return nil ;
     }
 
@@ -994,7 +1037,7 @@ object *fn_drawbitmap(object *args, object *env)
 
     if(!stringp(car(args)) )
     {
-          pfstring("\nError: file name must be string\n", pserial);
+          error("file name must be string \n", car(args));
           return nil ;
     }
 
