@@ -36,11 +36,14 @@ public:
 
     QTextCodec *codec;
 
+    const QClipboard *clipboard ;
+    const QMimeData *mimeData ;
+
     int volatile keypressed ;
     int volatile iModifierPressed ;
     int volatile ikeyread ;
     int AddPointsCount ;
-    char Symbol[512];
+    char Symbol[4096];
 
     int LeftButtonState, MidButtonState, RightButtonState ;
     int mouseY ;

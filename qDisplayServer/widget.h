@@ -128,6 +128,7 @@ public slots:
   void TimerProcessing() ;
 
 
+  void showOptions();
 
 
 
@@ -137,6 +138,9 @@ private slots:
   void on_toolButton_Exit_triggered(QAction *arg1);
 
   void on_toolButton_Exit_clicked();
+
+  void on_groupBox_Options_clicked();
+
 
 private:
     QTcpServer server;
@@ -176,7 +180,7 @@ private:
   void Clearscreen(QColor color) ;
   void DrawEllipse(int x, int y, int w, int h) ;
   void FillEllipse(int x, int y, int w, int h) ;
-  void SetViewPort( int x,  int y,  int w, int h);
+  void lcd_SetViewPort( int x,  int y,  int w, int h);
   void DrawArc( int x, int y, int w,int h, int astart, int aspan) ;
   void DrawChord( int x, int y, int w,int h, int astart, int aspan) ;
   void DrawLine( int x, int y, int x2,int y2) ;
@@ -203,6 +207,7 @@ private:
   int lcd_getFontHeight();
   int lcd_getFontWidth();
   void lcd_setFont(int i );
+  FONT_INFO* lcd_getFontInfo(int i);
   int lcd_getFontsNumber() ;
   int lcd_setFontName(char *family,int iHeight, int istyle);
   int lcd_getTextWidth(char *str);
@@ -212,6 +217,8 @@ private:
 
     QImage GetImage(int x, int y, int w, int h) ;
     void PutImage(int x, int y, QImage image) ;
+
+
 private:
     Ui::Widget *ui;
 };

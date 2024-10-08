@@ -3,6 +3,9 @@
 
 #include <QPainter>
 #include <QPaintEngine>
+#include <QClipboard>
+#include <QMimeData>
+#include <QApplication>
 
 #include "qscrollscreenarea.h"
 #include "widget.h"
@@ -33,6 +36,8 @@ QScrollScreenArea::QScrollScreenArea(QWidget *parent) :
     //codec= QTextCodec::codecForName("IBM866" /*"Windows-1251"*/ ) ;
     //QTextCodec::setCodecForLocale(codec);
 
+    clipboard = QApplication::clipboard();
+    mimeData = clipboard->mimeData();
 
     LeftButtonState=0;
     MidButtonState=0;
@@ -267,6 +272,44 @@ void QScrollScreenArea::keyPressEvent( QKeyEvent *e )
         {
         case 'V':
         case 'v':  CodeChar = 7 ; break ;
+        default: ;
+        }
+
+        switch(e->nativeScanCode())
+        {
+        case 96: qrlisp->showOptions();  // ALT-F12
+            keyboardMutex.unlock();  return ;
+        default: ;
+        }
+    }
+
+
+
+    if(0 != (iModifierPressed&SHIFT_mask))
+    {
+        switch(e->key())
+        {
+        case Qt::Key_Insert :
+            {
+            mimeData = clipboard->mimeData();
+
+                /*if (mimeData->hasImage()) { }
+                else if (mimeData->hasHtml()) { }
+                else */
+                if (mimeData->hasText())
+                {
+                    //setText(mimeData->text());
+                    //setTextFormat(Qt::PlainText);
+                    int len = mimeData->text().length() ;
+                    strncpy(&Symbol[keypressed],
+                            mimeData->text().toLocal8Bit().data(),len) ;
+                    keypressed += len ;
+
+                    keyboardMutex.unlock();
+                    return ;
+                }
+            }
+            break ;
         default: ;
         }
     }

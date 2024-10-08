@@ -66,13 +66,22 @@ Widget::Widget(QWidget *parent)
 
     //ui->verticalLayout->addWidget(ui->checkBox_textwindow);
     //ui->verticalLayout->addWidget(ui->toolButton_Exit);
+    ui->groupBox_Options->hide();
 
     textBrowser_tcp = NULL ;
     iUseTextWindow = 0 ;
 
+
+    textBrowser_tcp = new QTextBrowser(this) ;
+    textBrowser_tcp->setMaximumHeight(100) ;
+     ui->verticalLayout->addWidget(textBrowser_tcp) ;
+    textBrowser_tcp->hide() ;
+
     iMaxX = DEF_QRLISP_MAXX ;
     iMaxY = DEF_QRLISP_MAXY ;
     //pixmap = QPixmap(iMaxX, iMaxY) ;
+
+    resize(DEF_QRLISP_MAXX, DEF_QRLISP_MAXY) ;
 
     connect(&server, SIGNAL(newConnection()),
       this, SLOT(acceptConnection()));
@@ -87,7 +96,7 @@ Widget::Widget(QWidget *parent)
     penwidth = 1 ;
 
     _SetVGABkcolor(0);
-    SetViewPort(0,0,_GetScreenMaxX(),_GetScreenMaxY()) ;
+    lcd_SetViewPort(0,0,_GetScreenMaxX(),_GetScreenMaxY()) ;
     Clearscreen(qCurrentBackColor) ;
     //SetViewPort(10,10,_GetScreenMaxX()-10,_GetScreenMaxY()-10) ;
     //SetViewPort(10,10, 80, 80 ) ;
@@ -395,12 +404,13 @@ void Widget::startRead()
            if(buffer[9]=='b')
            {
                unsigned int v ;
-               int l = len - 10 ;
+               //int l = len - 10 ;
 
                // miss 0x00-symbols
-               while((buffer[l-1]==0)&&(l>0)) l-- ;
+               //while((buffer[l-1]==0)&&(l>0)) l-- ;
+               buffer[len] = 0x0 ;
 
-               v = this->lcd_getFontWidth() * l ;
+               v = lcd_getTextWidth(&buffer[10]) ;
                client->write((char*)(&v), sizeof(int) );
                break ;
            }
@@ -409,14 +419,14 @@ void Widget::startRead()
 
            if(n>1)
            {
-               int l = len - 10,  k = 10 ;
+               //int l = len - 10,  k = 10 ;
 
                // miss ' '-symbols
-               while((buffer[k]==' ')&&(l>0)) { l-- ; k++ ;}
+               //while((buffer[k]==' ')&&(l>0)) { l-- ; k++ ;}
                // miss 0x00-symbols
-               while((buffer[l-1]==0)&&(l>0)) l-- ;
+               //while((buffer[l-1]==0)&&(l>0)) l-- ;
 
-                sprintf(buffer,"%d\n", this->lcd_getFontWidth() * l) ;
+                sprintf(buffer,"%d\n", lcd_getTextWidth(&buffer[10])) ;
                 client->write(buffer, strlen(buffer) );
            }
          }
@@ -801,7 +811,7 @@ void Widget::startRead()
                 client->write(buffer, strlen(buffer) );
             }
         }
-        if(strncmp(buffer,"getvgacolor", 11)==0)
+        else if(strncmp(buffer,"getvgacolor", 11)==0)
         {
             unsigned int color ;
 
@@ -822,6 +832,45 @@ void Widget::startRead()
 
                 sprintf(buffer,"%u\n", GetVGAcolor(color));
                 client->write(buffer, strlen(buffer) );
+            }
+        }
+        else if(strncmp(buffer,"getfontinfo", 11)==0)
+        {
+            int ifont ;
+            FONT_INFO *sfont ;
+
+            if(buffer[11]=='b')
+            {
+
+                ifont = *(int*)(&buffer[12]) ;
+                sfont = lcd_getFontInfo(ifont) ;
+                if(sfont)
+                    client->write((char*)(sfont), sizeof(FONT_INFO*) );
+                else
+                {
+                    sprintf(buffer,"NO\n");
+                    client->write((char*)buffer, strlen(buffer) );
+                }
+                break ;
+            }
+
+            int n = GetArguments(&buffer[12], len) ;
+
+            if(n>0)
+            {
+                ifont = atoi(cOperand[0]) ;
+                sfont = lcd_getFontInfo(ifont) ;
+
+                if(sfont)
+                {
+                    sprintf(buffer,"%s,%d,%d", sfont->name, sfont->Height, sfont->Style);
+                    client->write(buffer, strlen(buffer) );
+                }
+                else
+                {
+                    sprintf(buffer,"NO\n");
+                    client->write((char*)buffer, strlen(buffer) );
+                }
             }
         }
 
@@ -975,7 +1024,7 @@ void Widget::startRead()
 
             if(buffer[11]=='b')
             {
-                SetViewPort(*(int*)(&buffer[12]), *(int*)(&buffer[12+sizeof(int)]),
+                lcd_SetViewPort(*(int*)(&buffer[12]), *(int*)(&buffer[12+sizeof(int)]),
                         *(int*)(&buffer[12+sizeof(int)*2]), *(int*)(&buffer[12+sizeof(int)*3])) ;
                 client->write("OK\n", 3);
                 break ;
@@ -984,7 +1033,7 @@ void Widget::startRead()
 
            if(n>4)
            {
-               SetViewPort(atoi(cOperand[1]),atoi(cOperand[2]),
+               lcd_SetViewPort(atoi(cOperand[1]),atoi(cOperand[2]),
                     atoi(cOperand[3]), atoi(cOperand[4]) ) ;
                client->write("OK\n", 3);
             }
@@ -1426,7 +1475,8 @@ void Widget::Clearscreen(QColor color)
     painter.setClipRect(CurrentViewport.left(),CurrentViewport.top(),
                         CurrentViewport.width(),CurrentViewport.height());
     painter.setBrush(Qt::SolidPattern) ;
-    painter.fillRect(0,0,_GetScreenMaxX(),_GetScreenMaxY(),QBrush(color));
+    painter.fillRect(0,0,CurrentViewport.width(),
+                     CurrentViewport.height(),QBrush(color));
     painter.end() ;
 }
 
@@ -1559,10 +1609,11 @@ void Widget::FillEllipse( int x, int y,  int w,  int h)
 
 
 
-void Widget::SetViewPort(int x, int y, int w, int h)
+void Widget::lcd_SetViewPort(int x, int y, int w, int h)
 {
     CurrentViewport = QRect(x,y,w,h) ;
-
+    painter.setClipRect(CurrentViewport.left(),CurrentViewport.top(),
+                        CurrentViewport.width(),CurrentViewport.height());
 }
 
 
@@ -1766,23 +1817,41 @@ void Widget::lcd_setFont(int i)
 
 int Widget::lcd_setFontName(char *family,int iHeight, int istyle)
 {
-    int i = 0 ;
+    int i = 0, k ;
 
+    if(strcmp(family,"Default") == 0) family = NULL ;
+    if(strcmp(family,"default") == 0) family = NULL ;
+    if(strcmp(family,"DEFAULT") == 0) family = NULL ;
+
+    //if(family == NULL)
     while((i<iFontsNumber) && ((iHeight>FontsBase[i].Height)||(istyle!=FontsBase[i].Style)))
     {
 
         i++ ;
     }
 
-    if(i>= iFontsNumber) i = iFontsNumber-1 ;
-    CurrentFont = &FontsBase[i] ;
-
+    k = i ;
     if(family != NULL)
     {
-        if(strcmp(family,CurrentFont->name) == 0) return 1 ;
+        while(((k<iFontsNumber) &&
+               (  (iHeight>FontsBase[k].Height)
+                ||(istyle!=FontsBase[k].Style)
+                ||(strncmp(family,FontsBase[k].name,strlen(family)) != 0)))) k++ ;
     }
 
-    return 0 ;
+    if(k>= iFontsNumber) k = i ;
+    if(k>= iFontsNumber) return 0 ;
+
+    CurrentFont = &FontsBase[k] ;
+
+    return 1 ;
+}
+
+
+FONT_INFO* Widget::lcd_getFontInfo(int i)
+{
+    if(i < iFontsNumber) return &FontsBase[i];
+    return NULL ;
 }
 
 
@@ -2029,7 +2098,29 @@ void Widget::PutImage (int x, int y, QImage image)
     painter.setClipRect(CurrentViewport.left(),CurrentViewport.top(),
                         CurrentViewport.width(),CurrentViewport.height());
 
-    painter.drawImage(x, y, image) ;
+    painter.drawImage(CurrentViewport.left()+x, CurrentViewport.top()+y, image) ;
     painter.end() ;
 }
 
+
+void Widget::on_groupBox_Options_clicked()
+{
+}
+
+void Widget::showOptions()
+{
+    /*if(ui->groupBox_Options->isHidden())
+        ui->groupBox_Options->show();
+    else
+        ui->groupBox_Options->hide();*/
+    if(textBrowser_tcp->isHidden() )
+    {
+        iUseTextWindow = 1 ;
+        textBrowser_tcp->show() ;
+    }
+    else
+    {
+        iUseTextWindow = 0 ;
+        textBrowser_tcp->hide() ;
+    }
+}
